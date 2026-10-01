@@ -153,10 +153,11 @@
     }
     .card:hover { transform: translateY(-3px); border-color: var(--accent-blue); }
     .card-thumb {
-        height: 160px; background-size: cover; background-position: center;
-        background-color: var(--bg-input);
-        position: relative;
+        height: 160px; background-color: var(--bg-input);
+        position: relative; overflow: hidden;
     }
+    .card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-thumb .no-photo { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 22px; }
     .status-badge {
         position: absolute; top: 10px; right: 10px;
         padding: 4px 10px; border-radius: 20px;
@@ -468,6 +469,18 @@
         return data.secure_url;
     };
 
+    // Pede pro Cloudinary já entregar a foto comprimida e no tamanho certo pro
+    // lugar onde vai aparecer (miniatura pequena na lista, maior no detalhe),
+    // em vez da foto original pesada toda vez — é o que evita o site ficar
+    // lento conforme o acervo de canhotos cresce.
+    const getOptimizedImageUrl = (url, width = 400) => {
+        if (!url || typeof url !== 'string') return url;
+        if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+            return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
+        }
+        return url;
+    };
+
     // --- TOAST / CONFIRM ---
     const toastContainer = document.getElementById('toastContainer');
     const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
@@ -604,7 +617,8 @@
             const dataFmt = c.dataEntrega ? formatarData(c.dataEntrega) : '-';
             return `
                 <div class="card" onclick="abrirDetalhe('${c.id}')">
-                    <div class="card-thumb" style="background-image: url('${thumb}')">
+                    <div class="card-thumb">
+                        ${thumb ? `<img src="${getOptimizedImageUrl(thumb, 400)}" loading="lazy" alt="">` : `<div class="no-photo"><i class="fa-regular fa-image"></i></div>`}
                         <span class="status-badge ${c.status}">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</span>
                     </div>
                     <div class="card-body">
@@ -664,7 +678,7 @@
     function renderizarPreviewFotos() {
         const grid = document.getElementById('photoPreviewGrid');
         grid.innerHTML = fotosTemp.map((f, i) => `
-            <div class="photo-preview" style="background-image: url('${f.previewUrl || f.url}')">
+            <div class="photo-preview" style="background-image: url('${f.previewUrl || getOptimizedImageUrl(f.url, 200)}')">
                 <button type="button" class="remove-photo" onclick="removerFotoTemp(${i})"><i class="fa-solid fa-xmark"></i></button>
             </div>
         `).join('');
@@ -730,7 +744,7 @@
         detalheAtualId = id;
 
         document.getElementById('detailPhotos').innerHTML = (c.fotos || []).map(url =>
-            `<img src="${url}" onclick="window.open('${url}', '_blank')">`
+            `<img src="${getOptimizedImageUrl(url, 900)}" loading="lazy" onclick="window.open('${url}', '_blank')">`
         ).join('');
 
         document.getElementById('detailFields').innerHTML = `
