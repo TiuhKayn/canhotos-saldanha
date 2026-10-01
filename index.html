@@ -443,21 +443,21 @@
 
     // CONFIGURAÇÃO FIREBASE — preencher depois de criar o projeto no console
     const firebaseConfig = {
-        apiKey: "COLE_AQUI",
-        authDomain: "COLE_AQUI",
-        projectId: "COLE_AQUI",
-        storageBucket: "COLE_AQUI",
-        messagingSenderId: "COLE_AQUI",
-        appId: "COLE_AQUI"
+        apiKey: "AIzaSyCpOGQW-LgKK655UIVLYgDmrAmsPjiGsF8",
+        authDomain: "canhotos-saldanha.firebaseapp.com",
+        projectId: "canhotos-saldanha",
+        storageBucket: "canhotos-saldanha.firebasestorage.app",
+        messagingSenderId: "28452747769",
+        appId: "1:28452747769:web:fbe42698e15ae382eba528"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // CONFIGURAÇÃO CLOUDINARY — preencher com o cloud name e o preset novo
-    const CLOUDINARY_CLOUD = "COLE_AQUI";
-    const CLOUDINARY_PRESET = "COLE_AQUI";
+    // CONFIGURAÇÃO CLOUDINARY — reaproveitando a mesma conta dos outros sites
+    const CLOUDINARY_CLOUD = "o1nv9kjt";
+    const CLOUDINARY_PRESET = "lothwar_store";
 
     const uploadToCloudinary = async (file) => {
         const fd = new FormData();
