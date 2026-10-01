@@ -459,7 +459,7 @@
             <datalist id="listaMotoristas"></datalist>
         </div>
         <div class="form-group">
-            <label>Referência (NF, CT-e, MDF-e...)</label>
+            <label>Referência (nº do CT-e, boleto...)</label>
             <input type="text" id="campoReferencia" placeholder="Ex: NF 12345">
         </div>
     </div>
@@ -565,15 +565,14 @@
 
     // --- TIPOS DE DOCUMENTO ---
     const TIPOS_DOCUMENTO = {
-        canhoto: { label: 'Canhoto Assinado', temCliente: true, temStatus: true },
-        ciot: { label: 'CIOT', temCliente: false, temStatus: false },
-        contrato: { label: 'Contrato de Frete', temCliente: false, temStatus: false },
-        danfe: { label: 'DANFE / NF-e', temCliente: false, temStatus: false },
-        mdfe: { label: 'MDF-e', temCliente: false, temStatus: false },
         cte: { label: 'CT-e', temCliente: false, temStatus: false },
-        minuta: { label: 'Minuta de Carregamento', temCliente: false, temStatus: false },
-        outro: { label: 'Outro', temCliente: false, temStatus: false }
+        relatorio_cobranca: { label: 'Relatório de Cobrança', temCliente: false, temStatus: false },
+        boleto: { label: 'Boleto', temCliente: false, temStatus: false },
+        canhoto: { label: 'Canhoto Assinado', temCliente: true, temStatus: true }
     };
+    // Fallback só pra não quebrar a tela se algum documento antigo (de um tipo
+    // já removido, tipo CIOT/Contrato/MDF-e) ainda estiver salvo no banco.
+    const TIPO_DESCONHECIDO = { label: 'Outro', temCliente: false, temStatus: false };
 
     const tipoSelect = document.getElementById('campoTipo');
     tipoSelect.innerHTML = Object.entries(TIPOS_DOCUMENTO).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
@@ -855,7 +854,7 @@
         grid.innerHTML = filtrados.map(c => {
             const primeiroArquivo = (c.arquivos && c.arquivos[0]) || null;
             const dataFmt = c.data ? formatarData(c.data) : '-';
-            const tipoInfo = TIPOS_DOCUMENTO[c.tipo] || TIPOS_DOCUMENTO.outro;
+            const tipoInfo = TIPOS_DOCUMENTO[c.tipo] || TIPO_DESCONHECIDO;
             const tituloCard = c.tipo === 'canhoto' ? (c.clienteFinal || 'Sem nome') : tipoInfo.label;
 
             let thumbHtml = `<div class="no-photo"><i class="fa-regular fa-image"></i></div>`;
@@ -955,7 +954,7 @@
     window.salvarCanhoto = async () => {
         if (!isMaster()) return;
         const tipo = document.getElementById('campoTipo').value;
-        const tipoInfo = TIPOS_DOCUMENTO[tipo] || TIPOS_DOCUMENTO.outro;
+        const tipoInfo = TIPOS_DOCUMENTO[tipo] || TIPO_DESCONHECIDO;
         const cliente = document.getElementById('campoCliente').value.trim();
         const data = document.getElementById('campoData').value;
         const motorista = document.getElementById('campoMotorista').value.trim();
@@ -1019,7 +1018,7 @@
         const c = canhotosGlobais.find(x => x.id === id);
         if (!c) return;
         detalheAtualId = id;
-        const tipoInfo = TIPOS_DOCUMENTO[c.tipo] || TIPOS_DOCUMENTO.outro;
+        const tipoInfo = TIPOS_DOCUMENTO[c.tipo] || TIPO_DESCONHECIDO;
 
         document.getElementById('detailPhotos').innerHTML = (c.arquivos || []).map(arq =>
             arq.isPdf
