@@ -534,18 +534,21 @@
     // resource_type "auto" deixa o Cloudinary aceitar tanto foto quanto PDF
     // (CIOT, Contrato, DANFE, MDF-e e CT-e chegam quase sempre em PDF) num
     // único endpoint, sem precisar de presets separados por tipo de arquivo.
+    // PDF vai pelo endpoint "raw", não "image"/"auto": por padrão o Cloudinary
+    // BLOQUEIA a abertura de PDF enviado como imagem (a URL existe, mas o
+    // acesso dá erro) — é uma trava de segurança da própria plataforma. Como
+    // "raw" entrega o arquivo like ele é, sem tentar processar como imagem,
+    // não cai nessa trava.
     const uploadToCloudinary = async (file) => {
+        const isPdf = file.type === 'application/pdf';
+        const resourceType = isPdf ? 'raw' : 'image';
         const fd = new FormData();
         fd.append('file', file);
         fd.append('upload_preset', CLOUDINARY_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`, { method: 'POST', body: fd });
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.error) throw new Error('Cloudinary: ' + data.error.message);
-        return {
-            url: data.secure_url,
-            isPdf: data.format === 'pdf' || data.resource_type === 'raw',
-            nome: file.name
-        };
+        return { url: data.secure_url, isPdf, nome: file.name };
     };
 
     // Pede pro Cloudinary já entregar a foto comprimida e no tamanho certo pro
