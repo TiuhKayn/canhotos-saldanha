@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canhotos — Saldanha Rodrigues</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+    :root {
+        --bg-body: #05070A;
+        --bg-card: #12161F;
+        --bg-header: #0A0E14;
+        --bg-input: #0B0D13;
+        --text-main: #EEF1F6;
+        --text-muted: #8A93A6;
+        --accent-blue: #3FC8FF;
+        --accent-blue-deep: #1B6FE0;
+        --accent-purple: #8B5CF6;
+        --accent-green: #35D488;
+        --accent-red: #FF6A3D;
+        --gold: #F0B94D;
+        --border-color: #2E3646;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: 'Rajdhani', system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at top right, #0D1119, #05070A);
+        color: var(--text-main);
+        margin: 0;
+        min-height: 100vh;
+    }
+
+    h1, h2, h3 { margin: 0; }
+
+    /* HEADER */
+    header {
+        background-color: var(--bg-header);
+        padding: 16px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-deep));
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 18px rgba(63,200,255,0.35);
+        flex-shrink: 0;
+    }
+    .brand-icon i { color: #05070A; font-size: 18px; }
+    .brand-text h1 { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; color: var(--text-main); }
+    .brand-text p { margin: 0; font-size: 0.75rem; color: var(--text-muted); }
+
+    .user-box { display: flex; align-items: center; gap: 12px; }
+    .user-pill {
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 14px 6px 6px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border-color);
+        border-radius: 30px;
+    }
+    .user-avatar {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent-purple), #6D28D9);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; color: white;
+    }
+    .icon-btn {
+        background: transparent; border: 1px solid var(--border-color); color: var(--text-muted);
+        width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+    .icon-btn:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+    /* TOOLBAR */
+    .toolbar {
+        padding: 20px 28px 0;
+        display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .search-box {
+        flex-grow: 1; min-width: 220px; height: 44px;
+        background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px;
+        display: flex; align-items: center; padding: 0 14px; gap: 10px;
+    }
+    .search-box input {
+        background: none; border: none; outline: none; color: var(--text-main);
+        font-family: 'Rajdhani', sans-serif; font-size: 15px; width: 100%;
+    }
+    .search-box i { color: var(--text-muted); }
+
+    select.filter-select {
+        height: 44px; padding: 0 14px; background: var(--bg-input);
+        border: 1px solid var(--border-color); border-radius: 8px;
+        color: var(--text-main); font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 14px;
+        cursor: pointer;
+    }
+
+    .btn {
+        padding: 11px 20px; border-radius: 8px; border: none; cursor: pointer;
+        font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px;
+        display: flex; align-items: center; gap: 8px; white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-deep));
+        color: #05070A; box-shadow: 0 0 18px rgba(63,200,255,0.4);
+    }
+    .btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-ghost {
+        background: transparent; border: 1px solid var(--border-color); color: var(--text-main);
+    }
+    .btn-ghost:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .btn-danger-outline {
+        background: rgba(255,106,61,0.08); border: 1px solid var(--accent-red); color: var(--accent-red);
+    }
+
+    /* GRID */
+    .grid {
+        padding: 20px 28px 60px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 18px;
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+    .empty-state i { font-size: 40px; opacity: 0.4; margin-bottom: 14px; display: block; }
+
+    .card {
+        background: linear-gradient(165deg, #171D28, #0D1119);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.15s, border-color 0.15s;
+        display: flex; flex-direction: column;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--accent-blue); }
+    .card-thumb {
+        height: 160px; background-size: cover; background-position: center;
+        background-color: var(--bg-input);
+        position: relative;
+    }
+    .status-badge {
+        position: absolute; top: 10px; right: 10px;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+        backdrop-filter: blur(4px);
+    }
+    .status-badge.pendente { background: rgba(240,185,77,0.18); border: 1px solid var(--gold); color: var(--gold); }
+    .status-badge.baixado { background: rgba(53,212,136,0.18); border: 1px solid var(--accent-green); color: var(--accent-green); }
+
+    .card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; flex-grow: 1; }
+    .card-cliente { font-weight: 700; font-size: 15px; color: var(--text-main); }
+    .card-meta { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+
+    /* OVERLAYS / MODALS */
+    .overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+        z-index: 10000; display: flex; align-items: center; justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .overlay.hidden { opacity: 0; pointer-events: none; display: none !important; }
+
+    .modal {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        z-index: 10001;
+        background-color: #0F0F11; border: 1px solid #222; border-radius: 20px;
+        width: 92%; max-width: 480px; max-height: 88vh; overflow-y: auto;
+        padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(63,200,255,0.08);
+        display: flex; flex-direction: column; gap: 20px;
+    }
+    .modal.hidden { display: none !important; }
+    .modal.modal-wide { max-width: 640px; }
+
+    .modal-header { display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--text-main); }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+    .form-group input, .form-group textarea {
+        background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main);
+        padding: 12px 14px; border-radius: 10px; font-size: 15px; font-family: 'Rajdhani', sans-serif;
+        outline: none; transition: all 0.2s; width: 100%;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+        border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(63,200,255,0.15);
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .photo-drop {
+        border: 1.5px dashed var(--border-color); border-radius: 12px; padding: 24px;
+        text-align: center; cursor: pointer; transition: all 0.2s; color: var(--text-muted);
+    }
+    .photo-drop:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .photo-drop i { font-size: 26px; margin-bottom: 8px; display: block; }
+
+    .photo-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .photo-preview {
+        position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+        background-size: cover; background-position: center; border: 1px solid var(--border-color);
+    }
+    .photo-preview .remove-photo {
+        position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%;
+        background: rgba(0,0,0,0.7); color: white; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 11px;
+    }
+
+    /* AUTH */
+    .auth-card {
+        background-color: var(--bg-card); padding: 40px; border-radius: 24px;
+        width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        border: 1px solid var(--border-color); text-align: center;
+    }
+    .auth-icon { margin-bottom: 14px; }
+    .auth-card h1 { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.3rem; letter-spacing: 1px; margin-bottom: 4px; }
+    .auth-card p.subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+    .auth-error {
+        background: rgba(255,106,61,0.1); color: var(--accent-red); padding: 10px; border-radius: 8px;
+        font-size: 13px; margin-bottom: 16px; display: none;
+    }
+    .btn-login {
+        width: 100%; padding: 13px; margin-top: 6px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-deep));
+        border: none; border-radius: 10px; color: #05070A; font-weight: 700; font-size: 15px; cursor: pointer;
+    }
+
+    /* TOASTS */
+    #toastContainer {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        z-index: 20000; display: flex; flex-direction: column; gap: 10px; align-items: center;
+        pointer-events: none; width: 90%; max-width: 420px;
+    }
+    .toast {
+        display: flex; align-items: center; gap: 12px;
+        background-color: var(--bg-card); border: 1px solid var(--border-color);
+        border-left: 4px solid var(--accent-blue); border-radius: 12px; padding: 14px 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: var(--text-main);
+        font-weight: 600; font-size: 14px; pointer-events: auto;
+        animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .toast.hide { animation: toastOut 0.25s ease forwards; }
+    .toast.success { border-left-color: var(--accent-green); } .toast.success i { color: var(--accent-green); }
+    .toast.error { border-left-color: var(--accent-red); } .toast.error i { color: var(--accent-red); }
+    @keyframes toastIn { from { opacity:0; transform: translateY(-20px) scale(0.95);} to {opacity:1; transform: translateY(0) scale(1);} }
+    @keyframes toastOut { from { opacity:1; transform: translateY(0) scale(1);} to {opacity:0; transform: translateY(-10px) scale(0.95);} }
+
+    .confirm-icon {
+        width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        margin: 0 auto; font-size: 22px; background: rgba(63,200,255,0.15); color: var(--accent-blue);
+    }
+    .confirm-icon.danger { background: rgba(255,106,61,0.15); color: var(--accent-red); }
+    .confirm-message { text-align: center; font-size: 15px; color: var(--text-main); line-height: 1.5; margin: 0; }
+    .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .detail-field { background: var(--bg-input); border-radius: 10px; padding: 10px 14px; }
+    .detail-field .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .detail-field .value { font-size: 14.5px; font-weight: 600; margin-top: 2px; }
+    .detail-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .detail-photos img { width: 100%; border-radius: 10px; cursor: zoom-in; border: 1px solid var(--border-color); }
+
+    .loading-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 30000;
+        display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; color: white;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+        border: 4px solid rgba(255,255,255,0.1); border-left-color: var(--accent-blue);
+        width: 38px; height: 38px; border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 640px) {
+        .form-row { grid-template-columns: 1fr; }
+        .detail-grid { grid-template-columns: 1fr; }
+        header, .toolbar, .grid { padding-left: 16px; padding-right: 16px; }
+    }
+</style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay" class="overlay">
+    <div class="auth-card">
+        <div class="auth-icon">
+            <i class="fa-solid fa-file-signature" style="font-size: 36px; color: var(--accent-blue); filter: drop-shadow(0 0 10px rgba(63,200,255,0.4));"></i>
+        </div>
+        <h1>CANHOTOS</h1>
+        <p class="subtitle">Saldanha Rodrigues — comprovantes de entrega</p>
+        <div id="authError" class="auth-error">Usuário ou senha inválidos.</div>
+        <form id="loginForm">
+            <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+                <label>E-mail</label>
+                <input type="email" id="loginEmail" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group" style="text-align: left;">
+                <label>Senha</label>
+                <input type="password" id="loginPass" placeholder="Digite sua senha" required>
+            </div>
+            <button type="submit" class="btn-login">Entrar</button>
+        </form>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display: none;">
+    <header>
+        <div class="brand">
+            <div class="brand-icon"><i class="fa-solid fa-file-signature"></i></div>
+            <div class="brand-text">
+                <h1>CANHOTOS</h1>
+                <p>Saldanha Rodrigues</p>
+            </div>
+        </div>
+        <div class="user-box">
+            <div class="user-pill">
+                <div class="user-avatar" id="userAvatar">?</div>
+                <span id="userName">Usuário</span>
+            </div>
+            <button class="icon-btn" onclick="logout()" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Buscar por cliente ou referência...">
+        </div>
+        <select id="statusFilter" class="filter-select">
+            <option value="todos">Todos os status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="baixado">Baixados</option>
+        </select>
+        <button class="btn btn-primary" onclick="abrirNovoCanhoto()"><i class="fa-solid fa-plus"></i> Novo Canhoto</button>
+    </div>
+
+    <div id="grid" class="grid">
+        <div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i>Carregando...</div>
+    </div>
+</div>
+
+<!-- MODAL: NOVO/EDITAR CANHOTO -->
+<div id="formOverlay" class="overlay hidden"></div>
+<div id="formModal" class="modal hidden">
+    <div class="modal-header">
+        <h2 id="formModalTitle">Novo Canhoto</h2>
+        <button class="modal-close" onclick="fecharFormCanhoto()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="form-group">
+        <label>Fotos do Canhoto</label>
+        <div class="photo-drop" onclick="document.getElementById('fotoInput').click()">
+            <i class="fa-solid fa-camera"></i>
+            Clique para adicionar foto(s) do canhoto assinado
+        </div>
+        <input type="file" id="fotoInput" accept="image/*" multiple style="display:none" onchange="handleFotoSelect(event)">
+        <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>Cliente (quem assinou)</label>
+            <input type="text" id="campoCliente" placeholder="Nome do cliente">
+        </div>
+        <div class="form-group">
+            <label>Data da Entrega</label>
+            <input type="date" id="campoData">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Referência (NF, pedido...)</label>
+        <input type="text" id="campoReferencia" placeholder="Ex: NF 12345">
+    </div>
+
+    <div class="form-group">
+        <label>Observação (opcional)</label>
+        <textarea id="campoObservacao" rows="2" placeholder="Alguma observação sobre a entrega..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" style="justify-content: center; padding: 13px;" onclick="salvarCanhoto()">
+        <i class="fa-solid fa-floppy-disk"></i> Salvar Canhoto
+    </button>
+</div>
+
+<!-- MODAL: DETALHE -->
+<div id="detailOverlay" class="overlay hidden"></div>
+<div id="detailModal" class="modal modal-wide hidden">
+    <div class="modal-header">
+        <h2>Detalhes do Canhoto</h2>
+        <button class="modal-close" onclick="fecharDetalhe()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="detail-photos" id="detailPhotos"></div>
+    <div class="detail-grid" id="detailFields"></div>
+    <div style="display:flex; gap:10px; flex-wrap: wrap;">
+        <button class="btn btn-primary" id="btnToggleStatus" style="flex:1; justify-content:center;" onclick="toggleStatusAtual()"></button>
+        <button class="btn btn-ghost" onclick="editarCanhotoAtual()"><i class="fa-solid fa-pen"></i> Editar</button>
+        <button class="btn btn-danger-outline" onclick="excluirCanhotoAtual()"><i class="fa-solid fa-trash"></i></button>
+    </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirmOverlay" class="overlay hidden"></div>
+<div id="confirmModal" class="modal hidden" style="max-width: 380px; text-align: center;">
+    <div class="confirm-icon" id="confirmIcon"><i class="fa-solid fa-circle-question"></i></div>
+    <p class="confirm-message" id="confirmMessage"></p>
+    <div class="confirm-actions">
+        <button class="btn btn-ghost" id="confirmBtnCancel" style="justify-content:center;">Cancelar</button>
+        <button class="btn btn-primary" id="confirmBtnYes" style="justify-content:center;">Confirmar</button>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <span id="loadingText">Processando...</span>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+    // CONFIGURAÇÃO FIREBASE — preencher depois de criar o projeto no console
+    const firebaseConfig = {
+        apiKey: "COLE_AQUI",
+        authDomain: "COLE_AQUI",
+        projectId: "COLE_AQUI",
+        storageBucket: "COLE_AQUI",
+        messagingSenderId: "COLE_AQUI",
+        appId: "COLE_AQUI"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // CONFIGURAÇÃO CLOUDINARY — preencher com o cloud name e o preset novo
+    const CLOUDINARY_CLOUD = "COLE_AQUI";
+    const CLOUDINARY_PRESET = "COLE_AQUI";
+
+    const uploadToCloudinary = async (file) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', CLOUDINARY_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.error) throw new Error('Cloudinary: ' + data.error.message);
+        return data.secure_url;
+    };
+
+    // --- TOAST / CONFIRM ---
+    const toastContainer = document.getElementById('toastContainer');
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
+    window.showToast = (message, type = 'info', duration = 3500) => {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="fa-solid ${TOAST_ICONS[type] || TOAST_ICONS.info}"></i><span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 250); }, duration);
+    };
+
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmMessageEl = document.getElementById('confirmMessage');
+    const confirmIconEl = document.getElementById('confirmIcon');
+    const confirmBtnYes = document.getElementById('confirmBtnYes');
+    const confirmBtnCancel = document.getElementById('confirmBtnCancel');
+    window.showConfirm = (message, { danger = false, confirmText = 'Confirmar' } = {}) => {
+        return new Promise((resolve) => {
+            confirmMessageEl.innerText = message;
+            confirmBtnYes.innerText = confirmText;
+            confirmIconEl.className = 'confirm-icon' + (danger ? ' danger' : '');
+            confirmIconEl.innerHTML = danger ? '<i class="fa-solid fa-triangle-exclamation"></i>' : '<i class="fa-solid fa-circle-question"></i>';
+            confirmBtnYes.className = 'btn btn-primary' + (danger ? ' btn-danger-outline' : '');
+            confirmBtnYes.style.justifyContent = 'center';
+            confirmOverlay.classList.remove('hidden');
+            confirmModal.classList.remove('hidden');
+            const cleanup = (result) => {
+                confirmOverlay.classList.add('hidden');
+                confirmModal.classList.add('hidden');
+                confirmBtnYes.removeEventListener('click', onYes);
+                confirmBtnCancel.removeEventListener('click', onCancel);
+                confirmOverlay.removeEventListener('click', onCancel);
+                resolve(result);
+            };
+            const onYes = () => cleanup(true);
+            const onCancel = () => cleanup(false);
+            confirmBtnYes.addEventListener('click', onYes);
+            confirmBtnCancel.addEventListener('click', onCancel);
+            confirmOverlay.addEventListener('click', onCancel);
+        });
+    };
+
+    function showLoading(text) {
+        document.getElementById('loadingText').innerText = text;
+        document.getElementById('loadingOverlay').classList.add('active');
+    }
+    function hideLoading() {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    // --- AUTH ---
+    const authOverlay = document.getElementById('authOverlay');
+    const appEl = document.getElementById('app');
+    const authError = document.getElementById('authError');
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        authError.style.display = 'none';
+        const email = document.getElementById('loginEmail').value.trim();
+        const pass = document.getElementById('loginPass').value;
+        showLoading('Entrando...');
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (err) {
+            console.error(err);
+            authError.innerText = 'E-mail ou senha inválidos.';
+            authError.style.display = 'block';
+        } finally {
+            hideLoading();
+        }
+    });
+
+    window.logout = async () => {
+        if (!(await showConfirm('Deseja realmente sair?'))) return;
+        await signOut(auth);
+    };
+
+    let unsubscribeCanhotos = null;
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authOverlay.classList.add('hidden');
+            appEl.style.display = 'block';
+            const name = user.email.split('@')[0];
+            document.getElementById('userName').innerText = name;
+            document.getElementById('userAvatar').innerText = name.charAt(0).toUpperCase();
+            iniciarListenerCanhotos();
+        } else {
+            authOverlay.classList.remove('hidden');
+            appEl.style.display = 'none';
+            if (unsubscribeCanhotos) { unsubscribeCanhotos(); unsubscribeCanhotos = null; }
+        }
+    });
+
+    // --- DADOS ---
+    let canhotosGlobais = [];
+    let fotosTemp = []; // { file, previewUrl } ou { url } se já salva (edição)
+    let editingId = null;
+    let detalheAtualId = null;
+
+    function iniciarListenerCanhotos() {
+        const q = query(collection(db, "canhotos"), orderBy("criadoEm", "desc"));
+        unsubscribeCanhotos = onSnapshot(q, (snap) => {
+            canhotosGlobais = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderizarGrid();
+        }, (err) => {
+            console.error(err);
+            showToast('Erro ao carregar canhotos: ' + err.message, 'error');
+        });
+    }
+
+    function renderizarGrid() {
+        const busca = document.getElementById('searchInput').value.trim().toLowerCase();
+        const statusF = document.getElementById('statusFilter').value;
+
+        const filtrados = canhotosGlobais.filter(c => {
+            if (statusF !== 'todos' && c.status !== statusF) return false;
+            if (busca) {
+                const alvo = `${c.clienteFinal || ''} ${c.referencia || ''}`.toLowerCase();
+                if (!alvo.includes(busca)) return false;
+            }
+            return true;
+        });
+
+        const grid = document.getElementById('grid');
+        if (filtrados.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i>Nenhum canhoto encontrado.</div>`;
+            return;
+        }
+
+        grid.innerHTML = filtrados.map(c => {
+            const thumb = (c.fotos && c.fotos[0]) || '';
+            const dataFmt = c.dataEntrega ? formatarData(c.dataEntrega) : '-';
+            return `
+                <div class="card" onclick="abrirDetalhe('${c.id}')">
+                    <div class="card-thumb" style="background-image: url('${thumb}')">
+                        <span class="status-badge ${c.status}">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-cliente">${escapeHtml(c.clienteFinal || 'Sem nome')}</div>
+                        <div class="card-meta"><i class="fa-regular fa-calendar"></i> ${dataFmt}</div>
+                        ${c.referencia ? `<div class="card-meta"><i class="fa-solid fa-hashtag"></i> ${escapeHtml(c.referencia)}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function formatarData(iso) {
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    }
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.innerText = str;
+        return div.innerHTML;
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderizarGrid);
+    document.getElementById('statusFilter').addEventListener('change', renderizarGrid);
+
+    // --- FORM NOVO/EDITAR ---
+    window.abrirNovoCanhoto = () => {
+        editingId = null;
+        fotosTemp = [];
+        document.getElementById('formModalTitle').innerText = 'Novo Canhoto';
+        document.getElementById('campoCliente').value = '';
+        document.getElementById('campoData').value = new Date().toISOString().split('T')[0];
+        document.getElementById('campoReferencia').value = '';
+        document.getElementById('campoObservacao').value = '';
+        renderizarPreviewFotos();
+        document.getElementById('formOverlay').classList.remove('hidden');
+        document.getElementById('formModal').classList.remove('hidden');
+    };
+
+    window.fecharFormCanhoto = () => {
+        document.getElementById('formOverlay').classList.add('hidden');
+        document.getElementById('formModal').classList.add('hidden');
+    };
+
+    window.handleFotoSelect = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => fotosTemp.push({ file, previewUrl: URL.createObjectURL(file) }));
+        renderizarPreviewFotos();
+        e.target.value = '';
+    };
+
+    window.removerFotoTemp = (idx) => {
+        fotosTemp.splice(idx, 1);
+        renderizarPreviewFotos();
+    };
+
+    function renderizarPreviewFotos() {
+        const grid = document.getElementById('photoPreviewGrid');
+        grid.innerHTML = fotosTemp.map((f, i) => `
+            <div class="photo-preview" style="background-image: url('${f.previewUrl || f.url}')">
+                <button type="button" class="remove-photo" onclick="removerFotoTemp(${i})"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        `).join('');
+    }
+
+    window.salvarCanhoto = async () => {
+        const cliente = document.getElementById('campoCliente').value.trim();
+        const data = document.getElementById('campoData').value;
+        const referencia = document.getElementById('campoReferencia').value.trim();
+        const observacao = document.getElementById('campoObservacao').value.trim();
+
+        if (!cliente || !data) {
+            return showToast('Preencha pelo menos o cliente e a data.', 'error');
+        }
+        if (fotosTemp.length === 0) {
+            return showToast('Adicione pelo menos uma foto do canhoto.', 'error');
+        }
+
+        showLoading('Salvando canhoto...');
+        try {
+            const fotosUrls = [];
+            for (let i = 0; i < fotosTemp.length; i++) {
+                const f = fotosTemp[i];
+                if (f.url) { fotosUrls.push(f.url); continue; }
+                document.getElementById('loadingText').innerText = `Enviando foto ${i + 1}/${fotosTemp.length}...`;
+                const url = await uploadToCloudinary(f.file);
+                fotosUrls.push(url);
+            }
+
+            const payload = {
+                clienteFinal: cliente,
+                dataEntrega: data,
+                referencia,
+                observacao,
+                fotos: fotosUrls,
+                userId: auth.currentUser.uid,
+                atualizadoEm: new Date().toISOString()
+            };
+
+            if (editingId) {
+                await updateDoc(doc(db, "canhotos", editingId), payload);
+                showToast('Canhoto atualizado!', 'success');
+            } else {
+                payload.status = 'pendente';
+                payload.criadoEm = new Date().toISOString();
+                payload.criadoPor = auth.currentUser.email;
+                await addDoc(collection(db, "canhotos"), payload);
+                showToast('Canhoto salvo!', 'success');
+            }
+            fecharFormCanhoto();
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao salvar: ' + e.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    };
+
+    // --- DETALHE ---
+    window.abrirDetalhe = (id) => {
+        const c = canhotosGlobais.find(x => x.id === id);
+        if (!c) return;
+        detalheAtualId = id;
+
+        document.getElementById('detailPhotos').innerHTML = (c.fotos || []).map(url =>
+            `<img src="${url}" onclick="window.open('${url}', '_blank')">`
+        ).join('');
+
+        document.getElementById('detailFields').innerHTML = `
+            <div class="detail-field"><div class="label">Cliente</div><div class="value">${escapeHtml(c.clienteFinal || '-')}</div></div>
+            <div class="detail-field"><div class="label">Data da Entrega</div><div class="value">${c.dataEntrega ? formatarData(c.dataEntrega) : '-'}</div></div>
+            <div class="detail-field"><div class="label">Referência</div><div class="value">${escapeHtml(c.referencia || '-')}</div></div>
+            <div class="detail-field"><div class="label">Status</div><div class="value">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</div></div>
+            ${c.observacao ? `<div class="detail-field" style="grid-column: 1 / -1;"><div class="label">Observação</div><div class="value">${escapeHtml(c.observacao)}</div></div>` : ''}
+        `;
+
+        const btn = document.getElementById('btnToggleStatus');
+        if (c.status === 'baixado') {
+            btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Marcar como Pendente';
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Marcar como Baixado';
+        }
+
+        document.getElementById('detailOverlay').classList.remove('hidden');
+        document.getElementById('detailModal').classList.remove('hidden');
+    };
+
+    window.fecharDetalhe = () => {
+        document.getElementById('detailOverlay').classList.add('hidden');
+        document.getElementById('detailModal').classList.add('hidden');
+        detalheAtualId = null;
+    };
+
+    window.toggleStatusAtual = async () => {
+        const c = canhotosGlobais.find(x => x.id === detalheAtualId);
+        if (!c) return;
+        const novoStatus = c.status === 'baixado' ? 'pendente' : 'baixado';
+        try {
+            const payload = { status: novoStatus };
+            if (novoStatus === 'baixado') {
+                payload.baixadoPor = auth.currentUser.email;
+                payload.baixadoEm = new Date().toISOString();
+            }
+            await updateDoc(doc(db, "canhotos", detalheAtualId), payload);
+            showToast(novoStatus === 'baixado' ? 'Marcado como baixado!' : 'Marcado como pendente.', 'success');
+            fecharDetalhe();
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao atualizar status: ' + e.message, 'error');
+        }
+    };
+
+    window.editarCanhotoAtual = () => {
+        const c = canhotosGlobais.find(x => x.id === detalheAtualId);
+        if (!c) return;
+        editingId = c.id;
+        fotosTemp = (c.fotos || []).map(url => ({ url }));
+        document.getElementById('formModalTitle').innerText = 'Editar Canhoto';
+        document.getElementById('campoCliente').value = c.clienteFinal || '';
+        document.getElementById('campoData').value = c.dataEntrega || '';
+        document.getElementById('campoReferencia').value = c.referencia || '';
+        document.getElementById('campoObservacao').value = c.observacao || '';
+        renderizarPreviewFotos();
+        fecharDetalhe();
+        document.getElementById('formOverlay').classList.remove('hidden');
+        document.getElementById('formModal').classList.remove('hidden');
+    };
+
+    window.excluirCanhotoAtual = async () => {
+        if (!(await showConfirm('Excluir este canhoto permanentemente? As fotos continuam no Cloudinary, só o registro sai daqui.', { danger: true, confirmText: 'Excluir' }))) return;
+        showLoading('Excluindo...');
+        try {
+            await deleteDoc(doc(db, "canhotos", detalheAtualId));
+            showToast('Canhoto excluído.', 'success');
+            fecharDetalhe();
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao excluir: ' + e.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    };
+</script>
+</body>
+</html>
