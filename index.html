@@ -167,8 +167,24 @@
     .status-badge.pendente { background: rgba(240,185,77,0.18); border: 1px solid var(--gold); color: var(--gold); }
     .status-badge.baixado { background: rgba(53,212,136,0.18); border: 1px solid var(--accent-green); color: var(--accent-green); }
 
+    .type-badge {
+        position: absolute; top: 10px; left: 10px;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+        background: rgba(63,200,255,0.18); border: 1px solid var(--accent-blue); color: var(--accent-blue);
+        backdrop-filter: blur(4px);
+    }
+
+    .pdf-tile {
+        width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 6px; color: var(--text-muted); background: var(--bg-input);
+    }
+    .pdf-tile i { font-size: 30px; color: var(--accent-red); }
+    .pdf-tile span { font-size: 11px; text-align: center; padding: 0 8px; word-break: break-all; }
+
     .card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; flex-grow: 1; }
     .card-cliente { font-weight: 700; font-size: 15px; color: var(--text-main); }
+    .card-motorista { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
     .card-meta { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
 
     /* OVERLAYS / MODALS */
@@ -343,14 +359,20 @@
     <div class="toolbar">
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="searchInput" placeholder="Buscar por cliente ou referência...">
+            <input type="text" id="searchInput" placeholder="Buscar por cliente, motorista ou referência...">
         </div>
+        <select id="tipoFilter" class="filter-select">
+            <option value="todos">Todos os tipos</option>
+        </select>
+        <select id="motoristaFilter" class="filter-select">
+            <option value="todos">Todos os motoristas</option>
+        </select>
         <select id="statusFilter" class="filter-select">
             <option value="todos">Todos os status</option>
             <option value="pendente">Pendentes</option>
             <option value="baixado">Baixados</option>
         </select>
-        <button class="btn btn-primary" onclick="abrirNovoCanhoto()"><i class="fa-solid fa-plus"></i> Novo Canhoto</button>
+        <button class="btn btn-primary" id="btnNovoDoc" onclick="abrirNovoCanhoto()" style="display:none;"><i class="fa-solid fa-plus"></i> Novo Documento</button>
     </div>
 
     <div id="grid" class="grid">
@@ -358,47 +380,59 @@
     </div>
 </div>
 
-<!-- MODAL: NOVO/EDITAR CANHOTO -->
+<!-- MODAL: NOVO/EDITAR DOCUMENTO -->
 <div id="formOverlay" class="overlay hidden"></div>
 <div id="formModal" class="modal hidden">
     <div class="modal-header">
-        <h2 id="formModalTitle">Novo Canhoto</h2>
+        <h2 id="formModalTitle">Novo Documento</h2>
         <button class="modal-close" onclick="fecharFormCanhoto()"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="form-group">
-        <label>Fotos do Canhoto</label>
+        <label>Tipo de Documento</label>
+        <select id="campoTipo" class="filter-select" style="width: 100%; height: 48px;" onchange="atualizarCamposPorTipo()"></select>
+    </div>
+
+    <div class="form-group">
+        <label id="labelArquivos">Arquivo(s)</label>
         <div class="photo-drop" onclick="document.getElementById('fotoInput').click()">
             <i class="fa-solid fa-camera"></i>
-            Clique para adicionar foto(s) do canhoto assinado
+            Clique para adicionar foto(s) ou PDF
         </div>
-        <input type="file" id="fotoInput" accept="image/*" multiple style="display:none" onchange="handleFotoSelect(event)">
+        <input type="file" id="fotoInput" accept="image/*,.pdf,application/pdf" multiple style="display:none" onchange="handleFotoSelect(event)">
         <div class="photo-preview-grid" id="photoPreviewGrid"></div>
     </div>
 
     <div class="form-row">
-        <div class="form-group">
-            <label>Cliente (quem assinou)</label>
+        <div class="form-group" id="grupoCliente">
+            <label>Cliente / Destinatário (quem assinou)</label>
             <input type="text" id="campoCliente" placeholder="Nome do cliente">
         </div>
         <div class="form-group">
-            <label>Data da Entrega</label>
+            <label>Data</label>
             <input type="date" id="campoData">
         </div>
     </div>
 
-    <div class="form-group">
-        <label>Referência (NF, pedido...)</label>
-        <input type="text" id="campoReferencia" placeholder="Ex: NF 12345">
+    <div class="form-row">
+        <div class="form-group">
+            <label>Motorista</label>
+            <input type="text" id="campoMotorista" placeholder="Nome do motorista" list="listaMotoristas">
+            <datalist id="listaMotoristas"></datalist>
+        </div>
+        <div class="form-group">
+            <label>Referência (NF, CT-e, MDF-e...)</label>
+            <input type="text" id="campoReferencia" placeholder="Ex: NF 12345">
+        </div>
     </div>
 
     <div class="form-group">
         <label>Observação (opcional)</label>
-        <textarea id="campoObservacao" rows="2" placeholder="Alguma observação sobre a entrega..."></textarea>
+        <textarea id="campoObservacao" rows="2" placeholder="Alguma observação..."></textarea>
     </div>
 
     <button class="btn btn-primary" style="justify-content: center; padding: 13px;" onclick="salvarCanhoto()">
-        <i class="fa-solid fa-floppy-disk"></i> Salvar Canhoto
+        <i class="fa-solid fa-floppy-disk"></i> Salvar Documento
     </button>
 </div>
 
@@ -413,8 +447,8 @@
     <div class="detail-grid" id="detailFields"></div>
     <div style="display:flex; gap:10px; flex-wrap: wrap;">
         <button class="btn btn-primary" id="btnToggleStatus" style="flex:1; justify-content:center;" onclick="toggleStatusAtual()"></button>
-        <button class="btn btn-ghost" onclick="editarCanhotoAtual()"><i class="fa-solid fa-pen"></i> Editar</button>
-        <button class="btn btn-danger-outline" onclick="excluirCanhotoAtual()"><i class="fa-solid fa-trash"></i></button>
+        <button class="btn btn-ghost" id="btnEditarDoc" onclick="editarCanhotoAtual()"><i class="fa-solid fa-pen"></i> Editar</button>
+        <button class="btn btn-danger-outline" id="btnExcluirDoc" onclick="excluirCanhotoAtual()"><i class="fa-solid fa-trash"></i></button>
     </div>
 </div>
 
@@ -439,7 +473,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
     // CONFIGURAÇÃO FIREBASE — preencher depois de criar o projeto no console
     const firebaseConfig = {
@@ -459,26 +493,54 @@
     const CLOUDINARY_CLOUD = "o1nv9kjt";
     const CLOUDINARY_PRESET = "lothwar_store";
 
+    // resource_type "auto" deixa o Cloudinary aceitar tanto foto quanto PDF
+    // (CIOT, Contrato, DANFE, MDF-e e CT-e chegam quase sempre em PDF) num
+    // único endpoint, sem precisar de presets separados por tipo de arquivo.
     const uploadToCloudinary = async (file) => {
         const fd = new FormData();
         fd.append('file', file);
         fd.append('upload_preset', CLOUDINARY_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`, { method: 'POST', body: fd });
         const data = await res.json();
         if (data.error) throw new Error('Cloudinary: ' + data.error.message);
-        return data.secure_url;
+        return {
+            url: data.secure_url,
+            isPdf: data.format === 'pdf' || data.resource_type === 'raw',
+            nome: file.name
+        };
     };
 
     // Pede pro Cloudinary já entregar a foto comprimida e no tamanho certo pro
     // lugar onde vai aparecer (miniatura pequena na lista, maior no detalhe),
     // em vez da foto original pesada toda vez — é o que evita o site ficar
-    // lento conforme o acervo de canhotos cresce.
+    // lento conforme o acervo de documentos cresce. Não se aplica a PDF.
     const getOptimizedImageUrl = (url, width = 400) => {
         if (!url || typeof url !== 'string') return url;
         if (url.includes('cloudinary.com') && url.includes('/upload/')) {
             return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
         }
         return url;
+    };
+
+    // --- TIPOS DE DOCUMENTO ---
+    const TIPOS_DOCUMENTO = {
+        canhoto: { label: 'Canhoto Assinado', temCliente: true, temStatus: true },
+        ciot: { label: 'CIOT', temCliente: false, temStatus: false },
+        contrato: { label: 'Contrato de Frete', temCliente: false, temStatus: false },
+        danfe: { label: 'DANFE / NF-e', temCliente: false, temStatus: false },
+        mdfe: { label: 'MDF-e', temCliente: false, temStatus: false },
+        cte: { label: 'CT-e', temCliente: false, temStatus: false },
+        minuta: { label: 'Minuta de Carregamento', temCliente: false, temStatus: false },
+        outro: { label: 'Outro', temCliente: false, temStatus: false }
+    };
+
+    const tipoSelect = document.getElementById('campoTipo');
+    tipoSelect.innerHTML = Object.entries(TIPOS_DOCUMENTO).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+
+    window.atualizarCamposPorTipo = () => {
+        const tipo = document.getElementById('campoTipo').value;
+        const info = TIPOS_DOCUMENTO[tipo] || {};
+        document.getElementById('grupoCliente').style.display = info.temCliente ? 'flex' : 'none';
     };
 
     // --- TOAST / CONFIRM ---
@@ -560,14 +622,30 @@
     };
 
     let unsubscribeCanhotos = null;
+    let userRole = 'viewer'; // padrão seguro: só vira 'master' se o perfil confirmar
+    window.isMaster = () => userRole === 'master';
 
-    onAuthStateChanged(auth, (user) => {
+    function aplicarPermissoesNaUI() {
+        const master = isMaster();
+        document.getElementById('btnNovoDoc').style.display = master ? 'flex' : 'none';
+    }
+
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             authOverlay.classList.add('hidden');
             appEl.style.display = 'block';
             const name = user.email.split('@')[0];
             document.getElementById('userName').innerText = name;
             document.getElementById('userAvatar').innerText = name.charAt(0).toUpperCase();
+
+            try {
+                const perfilSnap = await getDoc(doc(db, 'perfis', user.uid));
+                userRole = (perfilSnap.exists() && perfilSnap.data().role === 'master') ? 'master' : 'viewer';
+            } catch (e) {
+                console.error('Erro ao checar perfil:', e);
+                userRole = 'viewer';
+            }
+            aplicarPermissoesNaUI();
             iniciarListenerCanhotos();
         } else {
             authOverlay.classList.remove('hidden');
@@ -583,24 +661,50 @@
     let detalheAtualId = null;
 
     function iniciarListenerCanhotos() {
-        const q = query(collection(db, "canhotos"), orderBy("criadoEm", "desc"));
+        const q = query(collection(db, "documentos"), orderBy("criadoEm", "desc"));
         unsubscribeCanhotos = onSnapshot(q, (snap) => {
             canhotosGlobais = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            atualizarFiltroTipo();
+            atualizarFiltroMotorista();
             renderizarGrid();
         }, (err) => {
             console.error(err);
-            showToast('Erro ao carregar canhotos: ' + err.message, 'error');
+            showToast('Erro ao carregar documentos: ' + err.message, 'error');
         });
+    }
+
+    function atualizarFiltroTipo() {
+        const sel = document.getElementById('tipoFilter');
+        const atual = sel.value;
+        sel.innerHTML = '<option value="todos">Todos os tipos</option>' +
+            Object.entries(TIPOS_DOCUMENTO).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+        sel.value = atual || 'todos';
+    }
+
+    function atualizarFiltroMotorista() {
+        const sel = document.getElementById('motoristaFilter');
+        const atual = sel.value;
+        const nomes = [...new Set(canhotosGlobais.map(c => c.motorista).filter(Boolean))].sort();
+        sel.innerHTML = '<option value="todos">Todos os motoristas</option>' +
+            nomes.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        sel.value = atual || 'todos';
+
+        const datalist = document.getElementById('listaMotoristas');
+        if (datalist) datalist.innerHTML = nomes.map(n => `<option value="${escapeHtml(n)}">`).join('');
     }
 
     function renderizarGrid() {
         const busca = document.getElementById('searchInput').value.trim().toLowerCase();
         const statusF = document.getElementById('statusFilter').value;
+        const tipoF = document.getElementById('tipoFilter').value;
+        const motoristaF = document.getElementById('motoristaFilter').value;
 
         const filtrados = canhotosGlobais.filter(c => {
             if (statusF !== 'todos' && c.status !== statusF) return false;
+            if (tipoF !== 'todos' && c.tipo !== tipoF) return false;
+            if (motoristaF !== 'todos' && c.motorista !== motoristaF) return false;
             if (busca) {
-                const alvo = `${c.clienteFinal || ''} ${c.referencia || ''}`.toLowerCase();
+                const alvo = `${c.clienteFinal || ''} ${c.motorista || ''} ${c.referencia || ''}`.toLowerCase();
                 if (!alvo.includes(busca)) return false;
             }
             return true;
@@ -608,21 +712,33 @@
 
         const grid = document.getElementById('grid');
         if (filtrados.length === 0) {
-            grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i>Nenhum canhoto encontrado.</div>`;
+            grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i>Nenhum documento encontrado.</div>`;
             return;
         }
 
         grid.innerHTML = filtrados.map(c => {
-            const thumb = (c.fotos && c.fotos[0]) || '';
-            const dataFmt = c.dataEntrega ? formatarData(c.dataEntrega) : '-';
+            const primeiroArquivo = (c.arquivos && c.arquivos[0]) || null;
+            const dataFmt = c.data ? formatarData(c.data) : '-';
+            const tipoInfo = TIPOS_DOCUMENTO[c.tipo] || TIPOS_DOCUMENTO.outro;
+            const tituloCard = c.tipo === 'canhoto' ? (c.clienteFinal || 'Sem nome') : tipoInfo.label;
+
+            let thumbHtml = `<div class="no-photo"><i class="fa-regular fa-image"></i></div>`;
+            if (primeiroArquivo) {
+                thumbHtml = primeiroArquivo.isPdf
+                    ? `<div class="pdf-tile"><i class="fa-solid fa-file-pdf"></i><span>${escapeHtml(primeiroArquivo.nome || 'PDF')}</span></div>`
+                    : `<img src="${getOptimizedImageUrl(primeiroArquivo.url, 400)}" loading="lazy" alt="">`;
+            }
+
             return `
                 <div class="card" onclick="abrirDetalhe('${c.id}')">
                     <div class="card-thumb">
-                        ${thumb ? `<img src="${getOptimizedImageUrl(thumb, 400)}" loading="lazy" alt="">` : `<div class="no-photo"><i class="fa-regular fa-image"></i></div>`}
-                        <span class="status-badge ${c.status}">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</span>
+                        ${thumbHtml}
+                        <span class="type-badge">${tipoInfo.label}</span>
+                        ${tipoInfo.temStatus ? `<span class="status-badge ${c.status}">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</span>` : ''}
                     </div>
                     <div class="card-body">
-                        <div class="card-cliente">${escapeHtml(c.clienteFinal || 'Sem nome')}</div>
+                        <div class="card-cliente">${escapeHtml(tituloCard)}</div>
+                        ${c.motorista ? `<div class="card-motorista"><i class="fa-solid fa-truck"></i> ${escapeHtml(c.motorista)}</div>` : ''}
                         <div class="card-meta"><i class="fa-regular fa-calendar"></i> ${dataFmt}</div>
                         ${c.referencia ? `<div class="card-meta"><i class="fa-solid fa-hashtag"></i> ${escapeHtml(c.referencia)}</div>` : ''}
                     </div>
@@ -643,14 +759,20 @@
 
     document.getElementById('searchInput').addEventListener('input', renderizarGrid);
     document.getElementById('statusFilter').addEventListener('change', renderizarGrid);
+    document.getElementById('tipoFilter').addEventListener('change', renderizarGrid);
+    document.getElementById('motoristaFilter').addEventListener('change', renderizarGrid);
 
     // --- FORM NOVO/EDITAR ---
     window.abrirNovoCanhoto = () => {
+        if (!isMaster()) return;
         editingId = null;
         fotosTemp = [];
-        document.getElementById('formModalTitle').innerText = 'Novo Canhoto';
+        document.getElementById('formModalTitle').innerText = 'Novo Documento';
+        document.getElementById('campoTipo').value = 'canhoto';
+        atualizarCamposPorTipo();
         document.getElementById('campoCliente').value = '';
         document.getElementById('campoData').value = new Date().toISOString().split('T')[0];
+        document.getElementById('campoMotorista').value = '';
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
         renderizarPreviewFotos();
@@ -665,7 +787,10 @@
 
     window.handleFotoSelect = (e) => {
         const files = Array.from(e.target.files);
-        files.forEach(file => fotosTemp.push({ file, previewUrl: URL.createObjectURL(file) }));
+        files.forEach(file => {
+            const isPdf = file.type === 'application/pdf';
+            fotosTemp.push({ file, isPdf, nome: file.name, previewUrl: isPdf ? null : URL.createObjectURL(file) });
+        });
         renderizarPreviewFotos();
         e.target.value = '';
     };
@@ -677,56 +802,72 @@
 
     function renderizarPreviewFotos() {
         const grid = document.getElementById('photoPreviewGrid');
-        grid.innerHTML = fotosTemp.map((f, i) => `
-            <div class="photo-preview" style="background-image: url('${f.previewUrl || getOptimizedImageUrl(f.url, 200)}')">
-                <button type="button" class="remove-photo" onclick="removerFotoTemp(${i})"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-        `).join('');
+        grid.innerHTML = fotosTemp.map((f, i) => {
+            const conteudo = f.isPdf
+                ? `<div class="pdf-tile"><i class="fa-solid fa-file-pdf"></i><span>${escapeHtml(f.nome || 'PDF')}</span></div>`
+                : '';
+            const estiloFundo = f.isPdf ? '' : `style="background-image: url('${f.previewUrl || getOptimizedImageUrl(f.url, 200)}')"`;
+            return `
+                <div class="photo-preview" ${estiloFundo}>
+                    ${conteudo}
+                    <button type="button" class="remove-photo" onclick="removerFotoTemp(${i})"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            `;
+        }).join('');
     }
 
     window.salvarCanhoto = async () => {
+        if (!isMaster()) return;
+        const tipo = document.getElementById('campoTipo').value;
+        const tipoInfo = TIPOS_DOCUMENTO[tipo] || TIPOS_DOCUMENTO.outro;
         const cliente = document.getElementById('campoCliente').value.trim();
         const data = document.getElementById('campoData').value;
+        const motorista = document.getElementById('campoMotorista').value.trim();
         const referencia = document.getElementById('campoReferencia').value.trim();
         const observacao = document.getElementById('campoObservacao').value.trim();
 
-        if (!cliente || !data) {
-            return showToast('Preencha pelo menos o cliente e a data.', 'error');
+        if (tipoInfo.temCliente && !cliente) {
+            return showToast('Preencha o cliente/destinatário.', 'error');
+        }
+        if (!data) {
+            return showToast('Preencha a data.', 'error');
         }
         if (fotosTemp.length === 0) {
-            return showToast('Adicione pelo menos uma foto do canhoto.', 'error');
+            return showToast('Adicione pelo menos um arquivo.', 'error');
         }
 
-        showLoading('Salvando canhoto...');
+        showLoading('Salvando documento...');
         try {
-            const fotosUrls = [];
+            const arquivos = [];
             for (let i = 0; i < fotosTemp.length; i++) {
                 const f = fotosTemp[i];
-                if (f.url) { fotosUrls.push(f.url); continue; }
-                document.getElementById('loadingText').innerText = `Enviando foto ${i + 1}/${fotosTemp.length}...`;
-                const url = await uploadToCloudinary(f.file);
-                fotosUrls.push(url);
+                if (f.url) { arquivos.push({ url: f.url, isPdf: !!f.isPdf, nome: f.nome || '' }); continue; }
+                document.getElementById('loadingText').innerText = `Enviando arquivo ${i + 1}/${fotosTemp.length}...`;
+                const resultado = await uploadToCloudinary(f.file);
+                arquivos.push({ url: resultado.url, isPdf: resultado.isPdf, nome: resultado.nome });
             }
 
             const payload = {
-                clienteFinal: cliente,
-                dataEntrega: data,
+                tipo,
+                clienteFinal: tipoInfo.temCliente ? cliente : '',
+                data,
+                motorista,
                 referencia,
                 observacao,
-                fotos: fotosUrls,
+                arquivos,
                 userId: auth.currentUser.uid,
                 atualizadoEm: new Date().toISOString()
             };
 
             if (editingId) {
-                await updateDoc(doc(db, "canhotos", editingId), payload);
-                showToast('Canhoto atualizado!', 'success');
+                await updateDoc(doc(db, "documentos", editingId), payload);
+                showToast('Documento atualizado!', 'success');
             } else {
-                payload.status = 'pendente';
+                if (tipoInfo.temStatus) payload.status = 'pendente';
                 payload.criadoEm = new Date().toISOString();
                 payload.criadoPor = auth.currentUser.email;
-                await addDoc(collection(db, "canhotos"), payload);
-                showToast('Canhoto salvo!', 'success');
+                await addDoc(collection(db, "documentos"), payload);
+                showToast('Documento salvo!', 'success');
             }
             fecharFormCanhoto();
         } catch (e) {
@@ -742,25 +883,34 @@
         const c = canhotosGlobais.find(x => x.id === id);
         if (!c) return;
         detalheAtualId = id;
+        const tipoInfo = TIPOS_DOCUMENTO[c.tipo] || TIPOS_DOCUMENTO.outro;
 
-        document.getElementById('detailPhotos').innerHTML = (c.fotos || []).map(url =>
-            `<img src="${getOptimizedImageUrl(url, 900)}" loading="lazy" onclick="window.open('${url}', '_blank')">`
+        document.getElementById('detailPhotos').innerHTML = (c.arquivos || []).map(arq =>
+            arq.isPdf
+                ? `<a href="${arq.url}" target="_blank" class="pdf-tile" style="border-radius:10px; border:1px solid var(--border-color); aspect-ratio:1; text-decoration:none;"><i class="fa-solid fa-file-pdf"></i><span>${escapeHtml(arq.nome || 'Abrir PDF')}</span></a>`
+                : `<img src="${getOptimizedImageUrl(arq.url, 900)}" loading="lazy" onclick="window.open('${arq.url}', '_blank')">`
         ).join('');
 
         document.getElementById('detailFields').innerHTML = `
-            <div class="detail-field"><div class="label">Cliente</div><div class="value">${escapeHtml(c.clienteFinal || '-')}</div></div>
-            <div class="detail-field"><div class="label">Data da Entrega</div><div class="value">${c.dataEntrega ? formatarData(c.dataEntrega) : '-'}</div></div>
+            <div class="detail-field"><div class="label">Tipo</div><div class="value">${tipoInfo.label}</div></div>
+            <div class="detail-field"><div class="label">Data</div><div class="value">${c.data ? formatarData(c.data) : '-'}</div></div>
+            ${tipoInfo.temCliente ? `<div class="detail-field"><div class="label">Cliente</div><div class="value">${escapeHtml(c.clienteFinal || '-')}</div></div>` : ''}
+            ${c.motorista ? `<div class="detail-field"><div class="label">Motorista</div><div class="value">${escapeHtml(c.motorista)}</div></div>` : ''}
             <div class="detail-field"><div class="label">Referência</div><div class="value">${escapeHtml(c.referencia || '-')}</div></div>
-            <div class="detail-field"><div class="label">Status</div><div class="value">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</div></div>
+            ${tipoInfo.temStatus ? `<div class="detail-field"><div class="label">Status</div><div class="value">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</div></div>` : ''}
             ${c.observacao ? `<div class="detail-field" style="grid-column: 1 / -1;"><div class="label">Observação</div><div class="value">${escapeHtml(c.observacao)}</div></div>` : ''}
         `;
 
         const btn = document.getElementById('btnToggleStatus');
+        const master = isMaster();
+        btn.style.display = (master && tipoInfo.temStatus) ? 'flex' : 'none';
         if (c.status === 'baixado') {
             btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Marcar como Pendente';
         } else {
             btn.innerHTML = '<i class="fa-solid fa-check"></i> Marcar como Baixado';
         }
+        document.getElementById('btnEditarDoc').style.display = master ? 'flex' : 'none';
+        document.getElementById('btnExcluirDoc').style.display = master ? 'flex' : 'none';
 
         document.getElementById('detailOverlay').classList.remove('hidden');
         document.getElementById('detailModal').classList.remove('hidden');
@@ -773,6 +923,7 @@
     };
 
     window.toggleStatusAtual = async () => {
+        if (!isMaster()) return;
         const c = canhotosGlobais.find(x => x.id === detalheAtualId);
         if (!c) return;
         const novoStatus = c.status === 'baixado' ? 'pendente' : 'baixado';
@@ -782,7 +933,7 @@
                 payload.baixadoPor = auth.currentUser.email;
                 payload.baixadoEm = new Date().toISOString();
             }
-            await updateDoc(doc(db, "canhotos", detalheAtualId), payload);
+            await updateDoc(doc(db, "documentos", detalheAtualId), payload);
             showToast(novoStatus === 'baixado' ? 'Marcado como baixado!' : 'Marcado como pendente.', 'success');
             fecharDetalhe();
         } catch (e) {
@@ -792,13 +943,17 @@
     };
 
     window.editarCanhotoAtual = () => {
+        if (!isMaster()) return;
         const c = canhotosGlobais.find(x => x.id === detalheAtualId);
         if (!c) return;
         editingId = c.id;
-        fotosTemp = (c.fotos || []).map(url => ({ url }));
-        document.getElementById('formModalTitle').innerText = 'Editar Canhoto';
+        fotosTemp = (c.arquivos || []).map(arq => ({ url: arq.url, isPdf: arq.isPdf, nome: arq.nome }));
+        document.getElementById('formModalTitle').innerText = 'Editar Documento';
+        document.getElementById('campoTipo').value = c.tipo || 'outro';
+        atualizarCamposPorTipo();
         document.getElementById('campoCliente').value = c.clienteFinal || '';
-        document.getElementById('campoData').value = c.dataEntrega || '';
+        document.getElementById('campoData').value = c.data || '';
+        document.getElementById('campoMotorista').value = c.motorista || '';
         document.getElementById('campoReferencia').value = c.referencia || '';
         document.getElementById('campoObservacao').value = c.observacao || '';
         renderizarPreviewFotos();
@@ -808,11 +963,12 @@
     };
 
     window.excluirCanhotoAtual = async () => {
-        if (!(await showConfirm('Excluir este canhoto permanentemente? As fotos continuam no Cloudinary, só o registro sai daqui.', { danger: true, confirmText: 'Excluir' }))) return;
+        if (!isMaster()) return;
+        if (!(await showConfirm('Excluir este documento permanentemente? Os arquivos continuam no Cloudinary, só o registro sai daqui.', { danger: true, confirmText: 'Excluir' }))) return;
         showLoading('Excluindo...');
         try {
-            await deleteDoc(doc(db, "canhotos", detalheAtualId));
-            showToast('Canhoto excluído.', 'success');
+            await deleteDoc(doc(db, "documentos", detalheAtualId));
+            showToast('Documento excluído.', 'success');
             fecharDetalhe();
         } catch (e) {
             console.error(e);
