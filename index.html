@@ -922,8 +922,15 @@
     }
 
     let avisoReferenciaJaMostrado = false;
+    // Vínculo Canhoto -> CT-e: o campo "cteVinculado" fica salvo no próprio canhoto.
     let cteSugeridoId = null;
     let cteVinculadoId = null;
+    // Vínculo CT-e -> Canhoto (sentido inverso): o CT-e não guarda nada; quem
+    // guarda é o canhoto do outro lado, então ao salvar um CT-e é preciso
+    // atualizar aquele canhoto separadamente (ver salvarCanhoto).
+    let canhotoSugeridoId = null;
+    let canhotoVinculadoId = null;
+    let canhotoVinculadoOriginalId = null;
 
     window.verificarReferenciaDuplicada = () => {
         const input = document.getElementById('campoReferencia');
@@ -934,29 +941,37 @@
         const btn = document.getElementById('btnVincularCte');
         const tipoAtual = document.getElementById('campoTipo').value;
 
+        const ehCanhoto = tipoAtual === 'canhoto';
+        const ehCte = tipoAtual === 'cte';
+        const tipoAlvo = ehCanhoto ? 'cte' : (ehCte ? 'canhoto' : null);
+        const rotuloAlvo = ehCanhoto ? 'CT-e' : 'Canhoto';
+
         // Se já há um vínculo confirmado, só mantém a confirmação enquanto a
-        // referência digitada ainda bater com a do CT-e vinculado. Se o texto
-        // mudou e não bate mais, descarta o vínculo e cai na checagem normal.
-        if (cteVinculadoId) {
-            const cte = canhotosGlobais.find(x => x.id === cteVinculadoId);
+        // referência digitada ainda bater com a do documento vinculado. Se o
+        // texto mudou e não bate mais, descarta o vínculo (localmente — quem
+        // persiste a desvinculação é salvarCanhoto) e cai na checagem normal.
+        const vinculadoId = ehCanhoto ? cteVinculadoId : (ehCte ? canhotoVinculadoId : null);
+        if (vinculadoId) {
+            const alvo = canhotosGlobais.find(x => x.id === vinculadoId);
             const numerosAtuais = extrairNumerosReferencia(input.value);
-            const numerosCte = cte ? extrairNumerosReferencia(cte.referencia) : [];
-            if (cte && numerosAtuais.some(n => numerosCte.includes(n))) {
+            const numerosAlvo = alvo ? extrairNumerosReferencia(alvo.referencia) : [];
+            if (alvo && numerosAtuais.some(n => numerosAlvo.includes(n))) {
                 linha.style.color = 'var(--accent-green)';
                 icone.className = 'fa-solid fa-link';
-                texto.innerText = `Vinculado ao CT-e (${cte.referencia || 'sem referência'}).`;
+                texto.innerText = `Vinculado ao ${rotuloAlvo} (${alvo.referencia || 'sem referência'}).`;
                 aviso.style.display = 'flex';
                 btn.style.display = 'flex';
                 btn.className = 'btn-link-cte desvincular';
                 btn.innerHTML = '<i class="fa-solid fa-link-slash"></i> Desvincular';
-                btn.onclick = window.desvincularCte;
+                btn.onclick = window.desvincularDocumento;
                 avisoReferenciaJaMostrado = true;
                 return;
             }
-            cteVinculadoId = null;
+            if (ehCanhoto) cteVinculadoId = null; else if (ehCte) canhotoVinculadoId = null;
         }
 
         cteSugeridoId = null;
+        canhotoSugeridoId = null;
         const numeros = extrairNumerosReferencia(input.value);
         let mensagem = null;
         let candidatoLink = null;
@@ -969,7 +984,7 @@
                 if (repetido) {
                     const quem = c.motorista ? ` (${c.motorista}${c.data ? ', ' + formatarData(c.data) : ''})` : '';
                     mensagem = `Nº ${repetido} já usado em outro documento${quem}.`;
-                    if (tipoAtual === 'canhoto' && c.tipo === 'cte') candidatoLink = c;
+                    if (tipoAlvo && c.tipo === tipoAlvo) candidatoLink = c;
                     break;
                 }
             }
@@ -984,11 +999,11 @@
             avisoReferenciaJaMostrado = true;
 
             if (candidatoLink) {
-                cteSugeridoId = candidatoLink.id;
+                if (ehCanhoto) cteSugeridoId = candidatoLink.id; else canhotoSugeridoId = candidatoLink.id;
                 btn.style.display = 'flex';
                 btn.className = 'btn-link-cte';
-                btn.innerHTML = '<i class="fa-solid fa-link"></i> Vincular a este CT-e';
-                btn.onclick = window.vincularCteSugerido;
+                btn.innerHTML = `<i class="fa-solid fa-link"></i> Vincular a este ${rotuloAlvo}`;
+                btn.onclick = window.vincularSugerido;
             } else {
                 btn.style.display = 'none';
                 btn.onclick = null;
@@ -1001,16 +1016,23 @@
         btn.onclick = null;
     };
 
-    window.vincularCteSugerido = () => {
-        if (!cteSugeridoId) return;
-        cteVinculadoId = cteSugeridoId;
-        cteSugeridoId = null;
-        verificarReferenciaDuplicada();
-        showToast('Canhoto vinculado ao CT-e.', 'success');
+    window.vincularSugerido = () => {
+        if (cteSugeridoId) {
+            cteVinculadoId = cteSugeridoId;
+            cteSugeridoId = null;
+            verificarReferenciaDuplicada();
+            showToast('Canhoto vinculado ao CT-e.', 'success');
+        } else if (canhotoSugeridoId) {
+            canhotoVinculadoId = canhotoSugeridoId;
+            canhotoSugeridoId = null;
+            verificarReferenciaDuplicada();
+            showToast('CT-e vinculado ao canhoto.', 'success');
+        }
     };
 
-    window.desvincularCte = () => {
+    window.desvincularDocumento = () => {
         cteVinculadoId = null;
+        canhotoVinculadoId = null;
         verificarReferenciaDuplicada();
     };
 
@@ -1122,6 +1144,8 @@
         editingId = null;
         fotosTemp = [];
         cteVinculadoId = null;
+        canhotoVinculadoId = null;
+        canhotoVinculadoOriginalId = null;
         document.getElementById('formModalTitle').innerText = 'Novo Documento';
         document.getElementById('campoTipo').value = 'canhoto';
         document.getElementById('campoCliente').value = '';
@@ -1209,16 +1233,30 @@
                 atualizadoEm: new Date().toISOString()
             };
 
+            let novoId = null;
             if (editingId) {
                 await updateDoc(doc(db, "documentos", editingId), payload);
-                showToast('Documento atualizado!', 'success');
             } else {
                 if (tipoInfo.temStatus) payload.status = 'pendente';
                 payload.criadoEm = new Date().toISOString();
                 payload.criadoPor = auth.currentUser.email;
-                await addDoc(collection(db, "documentos"), payload);
-                showToast('Documento salvo!', 'success');
+                const ref = await addDoc(collection(db, "documentos"), payload);
+                novoId = ref.id;
             }
+
+            // Vínculo no sentido CT-e -> Canhoto: quem guarda o campo é o
+            // canhoto do outro lado, não este documento, então atualiza à parte.
+            if (tipo === 'cte') {
+                const idDesteCte = editingId || novoId;
+                if (canhotoVinculadoId) {
+                    await updateDoc(doc(db, "documentos", canhotoVinculadoId), { cteVinculado: idDesteCte, atualizadoEm: new Date().toISOString() });
+                }
+                if (canhotoVinculadoOriginalId && canhotoVinculadoOriginalId !== canhotoVinculadoId) {
+                    await updateDoc(doc(db, "documentos", canhotoVinculadoOriginalId), { cteVinculado: null, atualizadoEm: new Date().toISOString() });
+                }
+            }
+
+            showToast(editingId ? 'Documento atualizado!' : 'Documento salvo!', 'success');
             fecharFormCanhoto();
         } catch (e) {
             console.error(e);
@@ -1312,6 +1350,13 @@
         editingId = c.id;
         fotosTemp = (c.arquivos || []).map(arq => ({ url: arq.url, isPdf: arq.isPdf, nome: arq.nome }));
         cteVinculadoId = c.cteVinculado || null;
+        if (c.tipo === 'cte') {
+            const canhotoLigado = canhotosGlobais.find(x => x.tipo === 'canhoto' && x.cteVinculado === c.id);
+            canhotoVinculadoId = canhotoLigado ? canhotoLigado.id : null;
+        } else {
+            canhotoVinculadoId = null;
+        }
+        canhotoVinculadoOriginalId = canhotoVinculadoId;
         document.getElementById('formModalTitle').innerText = 'Editar Documento';
         document.getElementById('campoTipo').value = c.tipo || 'outro';
         document.getElementById('campoCliente').value = c.clienteFinal || '';
