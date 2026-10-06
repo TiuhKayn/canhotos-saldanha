@@ -388,7 +388,7 @@
     </div>
 
     <div id="pastaBreadcrumb" class="toolbar" style="display:none;">
-        <a href="#" onclick="voltarParaPastas(); return false;" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Motoristas</a>
+        <a href="#" onclick="voltarUmNivel(); return false;" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> <span id="breadcrumbBackLabel">Motoristas</span></a>
         <h3 id="pastaMotoristaNome" style="margin:0; flex-grow:1; font-family:'Orbitron',sans-serif; font-size:1rem;"></h3>
         <select id="ordenacaoSelect" class="filter-select">
             <option value="data_desc">Data (mais recente primeiro)</option>
@@ -705,6 +705,7 @@
     let detalheAtualId = null;
     let viewMode = 'pastas'; // 'pastas' | 'lista'
     let motoristaAtivo = null; // nome do motorista quando dentro de uma pasta
+    let dataAtiva = null; // data quando dentro da subpasta de data de um motorista
 
     function iniciarListenerCanhotos() {
         const q = query(collection(db, "documentos"), orderBy("criadoEm", "desc"));
@@ -722,6 +723,8 @@
     function renderizarTudo() {
         if (viewMode === 'pastas' && !motoristaAtivo) {
             renderizarPastas();
+        } else if (viewMode === 'pastas' && motoristaAtivo && !dataAtiva) {
+            renderizarPastasData();
         } else {
             renderizarGrid();
         }
@@ -730,6 +733,7 @@
     window.mudarModoVisualizacao = (modo) => {
         viewMode = modo;
         motoristaAtivo = null;
+        dataAtiva = null;
         document.getElementById('btnModoPastas').classList.toggle('active', modo === 'pastas');
         document.getElementById('btnModoLista').classList.toggle('active', modo === 'lista');
         document.getElementById('motoristaFilter').style.display = modo === 'lista' ? '' : 'none';
@@ -737,15 +741,49 @@
         renderizarTudo();
     };
 
+    function atualizarBreadcrumb() {
+        const nomeExibicao = motoristaAtivo === '__sem_motorista__' ? 'Sem motorista definido' : motoristaAtivo;
+        const backLabel = document.getElementById('breadcrumbBackLabel');
+        const heading = document.getElementById('pastaMotoristaNome');
+        const ord = document.getElementById('ordenacaoSelect');
+        if (dataAtiva) {
+            backLabel.innerText = nomeExibicao;
+            heading.innerText = dataAtiva === '__sem_data__' ? 'Sem data definida' : formatarData(dataAtiva);
+            ord.style.display = '';
+        } else {
+            backLabel.innerText = 'Motoristas';
+            heading.innerText = nomeExibicao;
+            ord.style.display = 'none';
+        }
+    }
+
     window.abrirPastaMotorista = (nome) => {
         motoristaAtivo = nome;
-        document.getElementById('pastaMotoristaNome').innerText = nome === '__sem_motorista__' ? 'Sem motorista definido' : nome;
+        dataAtiva = null;
         document.getElementById('pastaBreadcrumb').style.display = 'flex';
-        renderizarGrid();
+        atualizarBreadcrumb();
+        renderizarTudo();
+    };
+
+    window.abrirPastaData = (data) => {
+        dataAtiva = data;
+        atualizarBreadcrumb();
+        renderizarTudo();
+    };
+
+    window.voltarUmNivel = () => {
+        if (dataAtiva) {
+            dataAtiva = null;
+            atualizarBreadcrumb();
+            renderizarTudo();
+        } else {
+            voltarParaPastas();
+        }
     };
 
     window.voltarParaPastas = () => {
         motoristaAtivo = null;
+        dataAtiva = null;
         document.getElementById('pastaBreadcrumb').style.display = 'none';
         renderizarPastas();
     };
@@ -790,6 +828,47 @@
 
     window.abrirPastaMotoristaPorIndice = (idx) => {
         abrirPastaMotorista(window._nomesPastas[idx]);
+    };
+
+    function renderizarPastasData() {
+        const grid = document.getElementById('grid');
+        const filtrados = aplicarFiltrosComuns(canhotosGlobais)
+            .filter(c => (c.motorista || '__sem_motorista__') === motoristaAtivo);
+        const contagem = {};
+        filtrados.forEach(c => {
+            const chave = c.data || '__sem_data__';
+            contagem[chave] = (contagem[chave] || 0) + 1;
+        });
+
+        const datas = Object.keys(contagem).sort((a, b) => {
+            if (a === '__sem_data__') return 1;
+            if (b === '__sem_data__') return -1;
+            return b.localeCompare(a); // mais recente primeiro
+        });
+
+        if (datas.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i>Nenhum documento encontrado.</div>`;
+            return;
+        }
+
+        window._datasPastas = datas; // lookup por índice, evita escapar valor no onclick
+        grid.innerHTML = datas.map((data, idx) => {
+            const label = data === '__sem_data__' ? 'Sem data definida' : formatarData(data);
+            const qtd = contagem[data];
+            return `
+                <div class="folder-card" onclick="abrirPastaDataPorIndice(${idx})">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <div>
+                        <div class="folder-name">${escapeHtml(label)}</div>
+                        <div class="folder-count">${qtd} documento${qtd === 1 ? '' : 's'}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    window.abrirPastaDataPorIndice = (idx) => {
+        abrirPastaData(window._datasPastas[idx]);
     };
 
     function atualizarFiltroTipo() {
@@ -839,6 +918,9 @@
 
         if (motoristaAtivo) {
             filtrados = filtrados.filter(c => (c.motorista || '__sem_motorista__') === motoristaAtivo);
+            if (dataAtiva) {
+                filtrados = filtrados.filter(c => (c.data || '__sem_data__') === dataAtiva);
+            }
             const ord = document.getElementById('ordenacaoSelect').value;
             filtrados.sort((a, b) => {
                 if (ord === 'data_asc') return (a.data || '').localeCompare(b.data || '');
