@@ -465,6 +465,7 @@
         <div class="form-group">
             <label>Referência (nº do CT-e, boleto...)</label>
             <input type="text" id="campoReferencia" placeholder="Ex: NF 12345">
+            <span id="avisoReferenciaDuplicada" style="display:none; align-items:center; gap:6px; color:var(--gold); font-size:0.8rem; margin-top:4px;"><i class="fa-solid fa-triangle-exclamation"></i> <span id="avisoReferenciaDuplicadaTexto"></span></span>
         </div>
     </div>
 
@@ -897,6 +898,37 @@
     // Remove pontuação comum de nº de documento (., -, /) pra buscar "96369" e achar "96.369"
     const normalizarBusca = (s) => s.toLowerCase().replace(/[.\-\/]/g, '');
 
+    // Extrai cada nº de documento citado numa referência, com ou sem "NF"/pontos,
+    // mesmo quando há mais de um (ex: "NF 96.666 - 97.777" -> ['96666', '97777'])
+    function extrairNumerosReferencia(texto) {
+        if (!texto) return [];
+        const matches = texto.match(/[\d.]+/g) || [];
+        return matches.map(m => m.replace(/\./g, '')).filter(Boolean);
+    }
+
+    window.verificarReferenciaDuplicada = () => {
+        const input = document.getElementById('campoReferencia');
+        const aviso = document.getElementById('avisoReferenciaDuplicada');
+        const numeros = extrairNumerosReferencia(input.value);
+
+        if (numeros.length > 0) {
+            for (const c of canhotosGlobais) {
+                if (editingId && c.id === editingId) continue;
+                const numerosExistentes = extrairNumerosReferencia(c.referencia);
+                const repetido = numeros.find(n => numerosExistentes.includes(n));
+                if (repetido) {
+                    const quem = c.motorista ? ` (${c.motorista}${c.data ? ', ' + formatarData(c.data) : ''})` : '';
+                    document.getElementById('avisoReferenciaDuplicadaTexto').innerText = `Nº ${repetido} já usado em outro documento${quem}.`;
+                    aviso.style.display = 'flex';
+                    return;
+                }
+            }
+        }
+        aviso.style.display = 'none';
+    };
+
+    document.getElementById('campoReferencia').addEventListener('input', verificarReferenciaDuplicada);
+
     function aplicarFiltrosComuns(lista) {
         const busca = normalizarBusca(document.getElementById('searchInput').value.trim());
         const statusF = document.getElementById('statusFilter').value;
@@ -999,6 +1031,7 @@
         document.getElementById('campoMotorista').value = '';
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
+        document.getElementById('avisoReferenciaDuplicada').style.display = 'none';
         renderizarPreviewFotos();
         document.getElementById('formOverlay').classList.remove('hidden');
         document.getElementById('formModal').classList.remove('hidden');
@@ -1173,6 +1206,7 @@
         document.getElementById('campoMotorista').value = c.motorista || '';
         document.getElementById('campoReferencia').value = c.referencia || '';
         document.getElementById('campoObservacao').value = c.observacao || '';
+        document.getElementById('avisoReferenciaDuplicada').style.display = 'none';
         renderizarPreviewFotos();
         fecharDetalhe();
         document.getElementById('formOverlay').classList.remove('hidden');
