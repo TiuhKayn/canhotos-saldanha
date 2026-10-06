@@ -300,6 +300,7 @@
     .toast.hide { animation: toastOut 0.25s ease forwards; }
     .toast.success { border-left-color: var(--accent-green); } .toast.success i { color: var(--accent-green); }
     .toast.error { border-left-color: var(--accent-red); } .toast.error i { color: var(--accent-red); }
+    .toast.warning { border-left-color: var(--gold); } .toast.warning i { color: var(--gold); }
     @keyframes toastIn { from { opacity:0; transform: translateY(-20px) scale(0.95);} to {opacity:1; transform: translateY(0) scale(1);} }
     @keyframes toastOut { from { opacity:1; transform: translateY(0) scale(1);} to {opacity:0; transform: translateY(-10px) scale(0.95);} }
 
@@ -590,7 +591,7 @@
 
     // --- TOAST / CONFIRM ---
     const toastContainer = document.getElementById('toastContainer');
-    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
     window.showToast = (message, type = 'info', duration = 3500) => {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -906,10 +907,13 @@
         return matches.map(m => m.replace(/\./g, '')).filter(Boolean);
     }
 
+    let avisoReferenciaJaMostrado = false;
+
     window.verificarReferenciaDuplicada = () => {
         const input = document.getElementById('campoReferencia');
         const aviso = document.getElementById('avisoReferenciaDuplicada');
         const numeros = extrairNumerosReferencia(input.value);
+        let mensagem = null;
 
         if (numeros.length > 0) {
             for (const c of canhotosGlobais) {
@@ -918,12 +922,20 @@
                 const repetido = numeros.find(n => numerosExistentes.includes(n));
                 if (repetido) {
                     const quem = c.motorista ? ` (${c.motorista}${c.data ? ', ' + formatarData(c.data) : ''})` : '';
-                    document.getElementById('avisoReferenciaDuplicadaTexto').innerText = `Nº ${repetido} já usado em outro documento${quem}.`;
-                    aviso.style.display = 'flex';
-                    return;
+                    mensagem = `Nº ${repetido} já usado em outro documento${quem}.`;
+                    break;
                 }
             }
         }
+
+        if (mensagem) {
+            document.getElementById('avisoReferenciaDuplicadaTexto').innerText = mensagem;
+            aviso.style.display = 'flex';
+            if (!avisoReferenciaJaMostrado) showToast(mensagem, 'warning');
+            avisoReferenciaJaMostrado = true;
+            return;
+        }
+        avisoReferenciaJaMostrado = false;
         aviso.style.display = 'none';
     };
 
@@ -1032,6 +1044,7 @@
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
         document.getElementById('avisoReferenciaDuplicada').style.display = 'none';
+        avisoReferenciaJaMostrado = false;
         renderizarPreviewFotos();
         document.getElementById('formOverlay').classList.remove('hidden');
         document.getElementById('formModal').classList.remove('hidden');
@@ -1207,6 +1220,7 @@
         document.getElementById('campoReferencia').value = c.referencia || '';
         document.getElementById('campoObservacao').value = c.observacao || '';
         document.getElementById('avisoReferenciaDuplicada').style.display = 'none';
+        avisoReferenciaJaMostrado = false;
         renderizarPreviewFotos();
         fecharDetalhe();
         document.getElementById('formOverlay').classList.remove('hidden');
