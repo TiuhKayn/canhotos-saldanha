@@ -451,7 +451,7 @@
             <input type="text" id="campoCliente" placeholder="Nome do cliente (deixe em branco se não souber)">
         </div>
         <div class="form-group">
-            <label>Data</label>
+            <label>Data — opcional</label>
             <input type="date" id="campoData">
         </div>
     </div>
@@ -815,8 +815,11 @@
     // Filtros de busca/tipo/status valem em qualquer modo (pastas, dentro de
     // uma pasta, ou lista). O filtro de motorista só se aplica à parte (via
     // dropdown na Lista, ou via motoristaAtivo dentro de uma pasta).
+    // Remove pontuação comum de nº de documento (., -, /) pra buscar "96369" e achar "96.369"
+    const normalizarBusca = (s) => s.toLowerCase().replace(/[.\-\/]/g, '');
+
     function aplicarFiltrosComuns(lista) {
-        const busca = document.getElementById('searchInput').value.trim().toLowerCase();
+        const busca = normalizarBusca(document.getElementById('searchInput').value.trim());
         const statusF = document.getElementById('statusFilter').value;
         const tipoF = document.getElementById('tipoFilter').value;
 
@@ -824,7 +827,7 @@
             if (statusF !== 'todos' && c.status !== statusF) return false;
             if (tipoF !== 'todos' && c.tipo !== tipoF) return false;
             if (busca) {
-                const alvo = `${c.clienteFinal || ''} ${c.motorista || ''} ${c.referencia || ''}`.toLowerCase();
+                const alvo = normalizarBusca(`${c.clienteFinal || ''} ${c.motorista || ''} ${c.referencia || ''}`);
                 if (!alvo.includes(busca)) return false;
             }
             return true;
@@ -965,9 +968,6 @@
         const referencia = document.getElementById('campoReferencia').value.trim();
         const observacao = document.getElementById('campoObservacao').value.trim();
 
-        if (!data) {
-            return showToast('Preencha a data.', 'error');
-        }
         if (fotosTemp.length === 0) {
             return showToast('Adicione pelo menos um arquivo.', 'error');
         }
