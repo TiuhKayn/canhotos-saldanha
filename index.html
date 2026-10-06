@@ -398,7 +398,8 @@
     </header>
 
     <div class="view-toggle">
-        <button type="button" id="btnModoPastas" class="view-tab active" onclick="mudarModoVisualizacao('pastas')"><i class="fa-solid fa-folder"></i> Por Motorista</button>
+        <button type="button" id="btnModoCobranca" class="view-tab active" onclick="mudarModoVisualizacao('cobranca')"><i class="fa-solid fa-file-invoice-dollar"></i> Boletos e Cobrança</button>
+        <button type="button" id="btnModoPastas" class="view-tab" onclick="mudarModoVisualizacao('pastas')"><i class="fa-solid fa-folder"></i> Por Motorista</button>
         <button type="button" id="btnModoLista" class="view-tab" onclick="mudarModoVisualizacao('lista')"><i class="fa-solid fa-list"></i> Lista Completa</button>
     </div>
 
@@ -418,8 +419,8 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="searchInput" placeholder="Buscar por cliente, motorista ou referência...">
         </div>
-        <select id="tipoFilter" class="filter-select">
-            <option value="cobranca">Boletos e Relatório de Cobrança</option>
+        <select id="tipoFilter" class="filter-select" style="display:none;">
+            <option value="todos">Todos os tipos</option>
         </select>
         <select id="motoristaFilter" class="filter-select" style="display:none;">
             <option value="todos">Todos os motoristas</option>
@@ -731,7 +732,7 @@
     let fotosTemp = []; // { file, previewUrl } ou { url } se já salva (edição)
     let editingId = null;
     let detalheAtualId = null;
-    let viewMode = 'pastas'; // 'pastas' | 'lista'
+    let viewMode = 'cobranca'; // 'cobranca' | 'pastas' | 'lista'
     let motoristaAtivo = null; // nome do motorista quando dentro de uma pasta
     let dataAtiva = null; // data quando dentro da subpasta de data de um motorista
 
@@ -749,9 +750,10 @@
     }
 
     function renderizarTudo() {
-        if (viewMode === 'pastas' && !motoristaAtivo) {
+        const modoPastas = viewMode === 'pastas' || viewMode === 'cobranca';
+        if (modoPastas && !motoristaAtivo) {
             renderizarPastas();
-        } else if (viewMode === 'pastas' && motoristaAtivo && !dataAtiva) {
+        } else if (modoPastas && motoristaAtivo && !dataAtiva) {
             renderizarPastasData();
         } else {
             renderizarGrid();
@@ -762,8 +764,10 @@
         viewMode = modo;
         motoristaAtivo = null;
         dataAtiva = null;
+        document.getElementById('btnModoCobranca').classList.toggle('active', modo === 'cobranca');
         document.getElementById('btnModoPastas').classList.toggle('active', modo === 'pastas');
         document.getElementById('btnModoLista').classList.toggle('active', modo === 'lista');
+        document.getElementById('tipoFilter').style.display = modo === 'cobranca' ? 'none' : '';
         document.getElementById('motoristaFilter').style.display = modo === 'lista' ? '' : 'none';
         document.getElementById('ordenacaoListaSelect').style.display = modo === 'lista' ? '' : 'none';
         document.getElementById('pastaBreadcrumb').style.display = 'none';
@@ -918,7 +922,6 @@
         const sel = document.getElementById('tipoFilter');
         const atual = sel.value;
         sel.innerHTML = '<option value="todos">Todos os tipos</option>' +
-            '<option value="cobranca">Boletos e Relatório de Cobrança</option>' +
             Object.entries(TIPOS_DOCUMENTO).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
         sel.value = atual || 'todos';
     }
@@ -1078,6 +1081,12 @@
     document.getElementById('campoReferencia').addEventListener('input', verificarReferenciaDuplicada);
 
     function aplicarFiltrosComuns(lista) {
+        // Aba "Boletos e Cobrança": sempre restrita a esses 2 tipos, independente
+        // do filtro de tipo (que fica escondido nessa aba).
+        if (viewMode === 'cobranca') {
+            lista = lista.filter(c => c.tipo === 'boleto' || c.tipo === 'relatorio_cobranca');
+        }
+
         const buscaRaw = document.getElementById('searchInput').value.trim();
         const busca = normalizarBusca(buscaRaw);
         // Se a busca tem dígitos, trata como nº de documento: compara prefixo contra
@@ -1088,11 +1097,7 @@
 
         return lista.filter(c => {
             if (statusF !== 'todos' && c.status !== statusF) return false;
-            if (tipoF === 'cobranca') {
-                if (c.tipo !== 'boleto' && c.tipo !== 'relatorio_cobranca') return false;
-            } else if (tipoF !== 'todos' && c.tipo !== tipoF) {
-                return false;
-            }
+            if (tipoF !== 'todos' && c.tipo !== tipoF) return false;
             if (busca) {
                 const alvoTexto = normalizarBusca(`${c.clienteFinal || ''} ${c.motorista || ''}`);
                 let bate = alvoTexto.includes(busca);
