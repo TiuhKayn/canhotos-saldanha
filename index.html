@@ -144,6 +144,16 @@
         background: transparent; border: 1px solid var(--border-color); color: var(--text-main);
     }
     .btn-ghost:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .btn-link-cte {
+        align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.78rem;
+        border-radius: 6px; background: transparent; cursor: pointer;
+        font-family: 'Rajdhani', sans-serif; font-weight: 700;
+        border: 1px solid var(--accent-purple); color: var(--accent-purple);
+        width: fit-content;
+    }
+    .btn-link-cte:hover { background: rgba(139,92,246,0.12); }
+    .btn-link-cte.desvincular { border-color: var(--text-muted); color: var(--text-muted); }
+    .btn-link-cte.desvincular:hover { background: rgba(255,255,255,0.06); }
     .btn-danger-outline {
         background: rgba(255,106,61,0.08); border: 1px solid var(--accent-red); color: var(--accent-red);
     }
@@ -466,7 +476,10 @@
         <div class="form-group">
             <label>Referência (nº do CT-e, boleto...)</label>
             <input type="text" id="campoReferencia" placeholder="Ex: NF 12345">
-            <span id="avisoReferenciaDuplicada" style="display:none; align-items:center; gap:6px; color:var(--gold); font-size:0.8rem; margin-top:4px;"><i class="fa-solid fa-triangle-exclamation"></i> <span id="avisoReferenciaDuplicadaTexto"></span></span>
+            <div id="avisoReferenciaDuplicada" style="display:none; flex-direction:column; align-items:flex-start; gap:6px; margin-top:4px;">
+                <span id="avisoReferenciaDuplicadaLinha" style="display:flex; align-items:center; gap:6px; font-size:0.8rem;"><i id="avisoReferenciaDuplicadaIcone" class="fa-solid fa-triangle-exclamation"></i> <span id="avisoReferenciaDuplicadaTexto"></span></span>
+                <button type="button" id="btnVincularCte" class="btn-link-cte" style="display:none;"></button>
+            </div>
         </div>
     </div>
 
@@ -587,6 +600,7 @@
         const tipo = document.getElementById('campoTipo').value;
         const info = TIPOS_DOCUMENTO[tipo] || {};
         document.getElementById('grupoCliente').style.display = info.temCliente ? 'flex' : 'none';
+        verificarReferenciaDuplicada();
     };
 
     // --- TOAST / CONFIRM ---
@@ -908,12 +922,44 @@
     }
 
     let avisoReferenciaJaMostrado = false;
+    let cteSugeridoId = null;
+    let cteVinculadoId = null;
 
     window.verificarReferenciaDuplicada = () => {
         const input = document.getElementById('campoReferencia');
         const aviso = document.getElementById('avisoReferenciaDuplicada');
+        const linha = document.getElementById('avisoReferenciaDuplicadaLinha');
+        const icone = document.getElementById('avisoReferenciaDuplicadaIcone');
+        const texto = document.getElementById('avisoReferenciaDuplicadaTexto');
+        const btn = document.getElementById('btnVincularCte');
+        const tipoAtual = document.getElementById('campoTipo').value;
+
+        // Se já há um vínculo confirmado, só mantém a confirmação enquanto a
+        // referência digitada ainda bater com a do CT-e vinculado. Se o texto
+        // mudou e não bate mais, descarta o vínculo e cai na checagem normal.
+        if (cteVinculadoId) {
+            const cte = canhotosGlobais.find(x => x.id === cteVinculadoId);
+            const numerosAtuais = extrairNumerosReferencia(input.value);
+            const numerosCte = cte ? extrairNumerosReferencia(cte.referencia) : [];
+            if (cte && numerosAtuais.some(n => numerosCte.includes(n))) {
+                linha.style.color = 'var(--accent-green)';
+                icone.className = 'fa-solid fa-link';
+                texto.innerText = `Vinculado ao CT-e (${cte.referencia || 'sem referência'}).`;
+                aviso.style.display = 'flex';
+                btn.style.display = 'flex';
+                btn.className = 'btn-link-cte desvincular';
+                btn.innerHTML = '<i class="fa-solid fa-link-slash"></i> Desvincular';
+                btn.onclick = window.desvincularCte;
+                avisoReferenciaJaMostrado = true;
+                return;
+            }
+            cteVinculadoId = null;
+        }
+
+        cteSugeridoId = null;
         const numeros = extrairNumerosReferencia(input.value);
         let mensagem = null;
+        let candidatoLink = null;
 
         if (numeros.length > 0) {
             for (const c of canhotosGlobais) {
@@ -923,20 +969,49 @@
                 if (repetido) {
                     const quem = c.motorista ? ` (${c.motorista}${c.data ? ', ' + formatarData(c.data) : ''})` : '';
                     mensagem = `Nº ${repetido} já usado em outro documento${quem}.`;
+                    if (tipoAtual === 'canhoto' && c.tipo === 'cte') candidatoLink = c;
                     break;
                 }
             }
         }
 
         if (mensagem) {
-            document.getElementById('avisoReferenciaDuplicadaTexto').innerText = mensagem;
+            linha.style.color = 'var(--gold)';
+            icone.className = 'fa-solid fa-triangle-exclamation';
+            texto.innerText = mensagem;
             aviso.style.display = 'flex';
             if (!avisoReferenciaJaMostrado) showToast(mensagem, 'warning');
             avisoReferenciaJaMostrado = true;
+
+            if (candidatoLink) {
+                cteSugeridoId = candidatoLink.id;
+                btn.style.display = 'flex';
+                btn.className = 'btn-link-cte';
+                btn.innerHTML = '<i class="fa-solid fa-link"></i> Vincular a este CT-e';
+                btn.onclick = window.vincularCteSugerido;
+            } else {
+                btn.style.display = 'none';
+                btn.onclick = null;
+            }
             return;
         }
         avisoReferenciaJaMostrado = false;
         aviso.style.display = 'none';
+        btn.style.display = 'none';
+        btn.onclick = null;
+    };
+
+    window.vincularCteSugerido = () => {
+        if (!cteSugeridoId) return;
+        cteVinculadoId = cteSugeridoId;
+        cteSugeridoId = null;
+        verificarReferenciaDuplicada();
+        showToast('Canhoto vinculado ao CT-e.', 'success');
+    };
+
+    window.desvincularCte = () => {
+        cteVinculadoId = null;
+        verificarReferenciaDuplicada();
     };
 
     document.getElementById('campoReferencia').addEventListener('input', verificarReferenciaDuplicada);
@@ -1046,16 +1121,15 @@
         if (!isMaster()) return;
         editingId = null;
         fotosTemp = [];
+        cteVinculadoId = null;
         document.getElementById('formModalTitle').innerText = 'Novo Documento';
         document.getElementById('campoTipo').value = 'canhoto';
-        atualizarCamposPorTipo();
         document.getElementById('campoCliente').value = '';
         document.getElementById('campoData').value = new Date().toISOString().split('T')[0];
         document.getElementById('campoMotorista').value = '';
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
-        document.getElementById('avisoReferenciaDuplicada').style.display = 'none';
-        avisoReferenciaJaMostrado = false;
+        atualizarCamposPorTipo();
         renderizarPreviewFotos();
         document.getElementById('formOverlay').classList.remove('hidden');
         document.getElementById('formModal').classList.remove('hidden');
@@ -1130,6 +1204,7 @@
                 referencia,
                 observacao,
                 arquivos,
+                cteVinculado: tipo === 'canhoto' ? (cteVinculadoId || null) : null,
                 userId: auth.currentUser.uid,
                 atualizadoEm: new Date().toISOString()
             };
@@ -1166,6 +1241,19 @@
                 : `<div class="photo-tile"><img src="${getOptimizedImageUrl(arq.url, 900)}" loading="lazy" onclick="window.open('${arq.url}', '_blank')"><span class="photo-hint">Clique na imagem para ver</span></div>`
         ).join('');
 
+        let vinculoHtml = '';
+        if (c.tipo === 'canhoto' && c.cteVinculado) {
+            const cte = canhotosGlobais.find(x => x.id === c.cteVinculado);
+            if (cte) {
+                vinculoHtml = `<div class="detail-field"><div class="label">CT-e Vinculado</div><div class="value"><a href="#" onclick="abrirDetalhe('${cte.id}'); return false;" style="color:var(--accent-purple); text-decoration:underline;"><i class="fa-solid fa-link"></i> ${escapeHtml(cte.referencia || 'Ver CT-e')}</a></div></div>`;
+            }
+        } else if (c.tipo === 'cte') {
+            const canhotoVinculado = canhotosGlobais.find(x => x.cteVinculado === c.id);
+            if (canhotoVinculado) {
+                vinculoHtml = `<div class="detail-field"><div class="label">Canhoto Vinculado</div><div class="value"><a href="#" onclick="abrirDetalhe('${canhotoVinculado.id}'); return false;" style="color:var(--accent-purple); text-decoration:underline;"><i class="fa-solid fa-link"></i> ${escapeHtml(canhotoVinculado.referencia || 'Ver Canhoto')}</a></div></div>`;
+            }
+        }
+
         document.getElementById('detailFields').innerHTML = `
             <div class="detail-field"><div class="label">Tipo</div><div class="value">${tipoInfo.label}</div></div>
             <div class="detail-field"><div class="label">Data</div><div class="value">${c.data ? formatarData(c.data) : '-'}</div></div>
@@ -1173,6 +1261,7 @@
             ${c.motorista ? `<div class="detail-field"><div class="label">Motorista</div><div class="value">${escapeHtml(c.motorista)}</div></div>` : ''}
             <div class="detail-field"><div class="label">Referência</div><div class="value">${escapeHtml(c.referencia || '-')}</div></div>
             ${tipoInfo.temStatus ? `<div class="detail-field"><div class="label">Status</div><div class="value">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</div></div>` : ''}
+            ${vinculoHtml}
             ${c.observacao ? `<div class="detail-field" style="grid-column: 1 / -1;"><div class="label">Observação</div><div class="value">${escapeHtml(c.observacao)}</div></div>` : ''}
         `;
 
@@ -1222,16 +1311,15 @@
         if (!c) return;
         editingId = c.id;
         fotosTemp = (c.arquivos || []).map(arq => ({ url: arq.url, isPdf: arq.isPdf, nome: arq.nome }));
+        cteVinculadoId = c.cteVinculado || null;
         document.getElementById('formModalTitle').innerText = 'Editar Documento';
         document.getElementById('campoTipo').value = c.tipo || 'outro';
-        atualizarCamposPorTipo();
         document.getElementById('campoCliente').value = c.clienteFinal || '';
         document.getElementById('campoData').value = c.data || '';
         document.getElementById('campoMotorista').value = c.motorista || '';
         document.getElementById('campoReferencia').value = c.referencia || '';
         document.getElementById('campoObservacao').value = c.observacao || '';
-        document.getElementById('avisoReferenciaDuplicada').style.display = 'none';
-        avisoReferenciaJaMostrado = false;
+        atualizarCamposPorTipo();
         renderizarPreviewFotos();
         fecharDetalhe();
         document.getElementById('formOverlay').classList.remove('hidden');
