@@ -419,7 +419,7 @@
             <input type="text" id="searchInput" placeholder="Buscar por cliente, motorista ou referência...">
         </div>
         <select id="tipoFilter" class="filter-select">
-            <option value="todos">Todos os tipos</option>
+            <option value="cobranca">Boletos e Relatório de Cobrança</option>
         </select>
         <select id="motoristaFilter" class="filter-select" style="display:none;">
             <option value="todos">Todos os motoristas</option>
@@ -597,8 +597,8 @@
     // --- TIPOS DE DOCUMENTO ---
     const TIPOS_DOCUMENTO = {
         cte: { label: 'CT-e', temCliente: false, temStatus: false },
-        relatorio_cobranca: { label: 'Relatório de Cobrança', temCliente: false, temStatus: false },
-        boleto: { label: 'Boleto', temCliente: false, temStatus: false },
+        relatorio_cobranca: { label: 'Relatório de Cobrança', temCliente: false, temStatus: true },
+        boleto: { label: 'Boleto', temCliente: false, temStatus: true },
         canhoto: { label: 'Canhoto Assinado', temCliente: true, temStatus: true }
     };
     // Fallback só pra não quebrar a tela se algum documento antigo (de um tipo
@@ -918,6 +918,7 @@
         const sel = document.getElementById('tipoFilter');
         const atual = sel.value;
         sel.innerHTML = '<option value="todos">Todos os tipos</option>' +
+            '<option value="cobranca">Boletos e Relatório de Cobrança</option>' +
             Object.entries(TIPOS_DOCUMENTO).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
         sel.value = atual || 'todos';
     }
@@ -1087,7 +1088,11 @@
 
         return lista.filter(c => {
             if (statusF !== 'todos' && c.status !== statusF) return false;
-            if (tipoF !== 'todos' && c.tipo !== tipoF) return false;
+            if (tipoF === 'cobranca') {
+                if (c.tipo !== 'boleto' && c.tipo !== 'relatorio_cobranca') return false;
+            } else if (tipoF !== 'todos' && c.tipo !== tipoF) {
+                return false;
+            }
             if (busca) {
                 const alvoTexto = normalizarBusca(`${c.clienteFinal || ''} ${c.motorista || ''}`);
                 let bate = alvoTexto.includes(busca);
@@ -1159,7 +1164,7 @@
                     <div class="card-thumb">
                         ${thumbHtml}
                         <span class="type-badge">${tipoInfo.label}</span>
-                        ${tipoInfo.temStatus ? `<span class="status-badge ${c.status}">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</span>` : ''}
+                        ${tipoInfo.temStatus ? `<span class="status-badge ${c.status || 'pendente'}">${c.status === 'baixado' ? 'Baixado' : 'Pendente'}</span>` : ''}
                     </div>
                     <div class="card-body">
                         <div class="card-cliente">${escapeHtml(tituloCard)}</div>
