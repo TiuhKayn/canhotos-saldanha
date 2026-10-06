@@ -942,7 +942,11 @@
     document.getElementById('campoReferencia').addEventListener('input', verificarReferenciaDuplicada);
 
     function aplicarFiltrosComuns(lista) {
-        const busca = normalizarBusca(document.getElementById('searchInput').value.trim());
+        const buscaRaw = document.getElementById('searchInput').value.trim();
+        const busca = normalizarBusca(buscaRaw);
+        // Se a busca tem dígitos, trata como nº de documento: compara prefixo contra
+        // cada nº extraído da referência (evita "97" achar "96.397" só por ter "97" no fim)
+        const buscaNumeros = extrairNumerosReferencia(buscaRaw);
         const statusF = document.getElementById('statusFilter').value;
         const tipoF = document.getElementById('tipoFilter').value;
 
@@ -950,8 +954,15 @@
             if (statusF !== 'todos' && c.status !== statusF) return false;
             if (tipoF !== 'todos' && c.tipo !== tipoF) return false;
             if (busca) {
-                const alvo = normalizarBusca(`${c.clienteFinal || ''} ${c.motorista || ''} ${c.referencia || ''}`);
-                if (!alvo.includes(busca)) return false;
+                const alvoTexto = normalizarBusca(`${c.clienteFinal || ''} ${c.motorista || ''}`);
+                let bate = alvoTexto.includes(busca);
+                if (!bate) {
+                    const numerosDoc = extrairNumerosReferencia(c.referencia);
+                    bate = buscaNumeros.length > 0
+                        ? buscaNumeros.some(bn => numerosDoc.some(nd => nd.startsWith(bn)))
+                        : normalizarBusca(c.referencia || '').includes(busca);
+                }
+                if (!bate) return false;
             }
             return true;
         });
