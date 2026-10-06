@@ -1038,7 +1038,7 @@
 
         const btn = document.getElementById('btnToggleStatus');
         const master = isMaster();
-        btn.style.display = (master && tipoInfo.temStatus) ? 'flex' : 'none';
+        btn.style.display = tipoInfo.temStatus ? 'flex' : 'none';
         if (c.status === 'baixado') {
             btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Marcar como Pendente';
         } else {
@@ -1058,7 +1058,6 @@
     };
 
     window.toggleStatusAtual = async () => {
-        if (!isMaster()) return;
         const c = canhotosGlobais.find(x => x.id === detalheAtualId);
         if (!c) return;
         const novoStatus = c.status === 'baixado' ? 'pendente' : 'baixado';
