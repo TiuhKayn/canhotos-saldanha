@@ -404,8 +404,8 @@
         <select id="ordenacaoSelect" class="filter-select">
             <option value="data_desc">Data (mais recente primeiro)</option>
             <option value="data_asc">Data (mais antiga primeiro)</option>
-            <option value="ref_asc">Referência (A-Z)</option>
-            <option value="ref_desc">Referência (Z-A)</option>
+            <option value="ref_asc">Referência (menor → maior)</option>
+            <option value="ref_desc">Referência (maior → menor)</option>
         </select>
     </div>
 
@@ -419,6 +419,14 @@
         </select>
         <select id="motoristaFilter" class="filter-select" style="display:none;">
             <option value="todos">Todos os motoristas</option>
+        </select>
+        <select id="ordenacaoListaSelect" class="filter-select" style="display:none;">
+            <option value="data_desc">Data (mais recente primeiro)</option>
+            <option value="data_asc">Data (mais antiga primeiro)</option>
+            <option value="ref_asc">Referência (menor → maior)</option>
+            <option value="ref_desc">Referência (maior → menor)</option>
+            <option value="motorista_asc">Motorista (A-Z)</option>
+            <option value="motorista_desc">Motorista (Z-A)</option>
         </select>
         <select id="statusFilter" class="filter-select">
             <option value="todos">Todos os status</option>
@@ -753,6 +761,7 @@
         document.getElementById('btnModoPastas').classList.toggle('active', modo === 'pastas');
         document.getElementById('btnModoLista').classList.toggle('active', modo === 'lista');
         document.getElementById('motoristaFilter').style.display = modo === 'lista' ? '' : 'none';
+        document.getElementById('ordenacaoListaSelect').style.display = modo === 'lista' ? '' : 'none';
         document.getElementById('pastaBreadcrumb').style.display = 'none';
         renderizarTudo();
     };
@@ -921,6 +930,17 @@
         return matches.map(m => m.replace(/\./g, '')).filter(Boolean);
     }
 
+    // Compara pelo primeiro nº extraído da referência, numericamente (não por
+    // texto) — senão "100.001" ficaria antes de "97.249" (string "1" < "9").
+    function compararPorReferencia(a, b) {
+        const na = extrairNumerosReferencia(a.referencia)[0];
+        const nb = extrairNumerosReferencia(b.referencia)[0];
+        if (na === undefined && nb === undefined) return 0;
+        if (na === undefined) return 1;
+        if (nb === undefined) return -1;
+        return parseInt(na, 10) - parseInt(nb, 10);
+    }
+
     let avisoReferenciaJaMostrado = false;
     // Vínculo Canhoto -> CT-e: o campo "cteVinculado" fica salvo no próprio canhoto.
     let cteSugeridoId = null;
@@ -1077,13 +1097,24 @@
             filtrados.sort((a, b) => {
                 if (ord === 'data_asc') return (a.data || '').localeCompare(b.data || '');
                 if (ord === 'data_desc') return (b.data || '').localeCompare(a.data || '');
-                if (ord === 'ref_asc') return (a.referencia || '').localeCompare(b.referencia || '');
-                if (ord === 'ref_desc') return (b.referencia || '').localeCompare(a.referencia || '');
+                if (ord === 'ref_asc') return compararPorReferencia(a, b);
+                if (ord === 'ref_desc') return compararPorReferencia(b, a);
                 return 0;
             });
         } else {
             const motoristaF = document.getElementById('motoristaFilter').value;
             if (motoristaF !== 'todos') filtrados = filtrados.filter(c => c.motorista === motoristaF);
+
+            const ordLista = document.getElementById('ordenacaoListaSelect').value;
+            filtrados.sort((a, b) => {
+                if (ordLista === 'data_asc') return (a.data || '').localeCompare(b.data || '');
+                if (ordLista === 'data_desc') return (b.data || '').localeCompare(a.data || '');
+                if (ordLista === 'ref_asc') return compararPorReferencia(a, b);
+                if (ordLista === 'ref_desc') return compararPorReferencia(b, a);
+                if (ordLista === 'motorista_asc') return (a.motorista || '').localeCompare(b.motorista || '', 'pt-BR');
+                if (ordLista === 'motorista_desc') return (b.motorista || '').localeCompare(a.motorista || '', 'pt-BR');
+                return 0;
+            });
         }
 
         const grid = document.getElementById('grid');
@@ -1137,6 +1168,7 @@
     document.getElementById('statusFilter').addEventListener('change', renderizarTudo);
     document.getElementById('tipoFilter').addEventListener('change', renderizarTudo);
     document.getElementById('motoristaFilter').addEventListener('change', renderizarGrid);
+    document.getElementById('ordenacaoListaSelect').addEventListener('change', renderizarGrid);
 
     // --- FORM NOVO/EDITAR ---
     window.abrirNovoCanhoto = () => {
