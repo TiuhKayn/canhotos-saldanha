@@ -125,6 +125,9 @@
     .folder-card .folder-status-dot { position: absolute; top: 8px; right: 8px; font-size: 9px; flex-shrink: 0; }
     .folder-card .folder-status-dot.pendente { color: var(--gold); }
     .folder-card .folder-status-dot.ok { color: var(--accent-green); }
+    .folder-card .folder-viagem-dot { position: absolute; top: 8px; left: 8px; font-size: 9px; flex-shrink: 0; }
+    .folder-card .folder-viagem-dot.pendente { color: var(--gold); }
+    .folder-card .folder-viagem-dot.ok { color: var(--accent-green); }
 
     select.filter-select {
         height: 44px; padding: 0 14px; background: var(--bg-input);
@@ -408,6 +411,7 @@
         <div style="display:flex; align-items:center; gap:10px; flex-grow:1;">
             <h3 id="pastaMotoristaNome" style="margin:0; font-family:'Orbitron',sans-serif; font-size:1rem;"></h3>
             <button type="button" id="btnRenomearMotorista" class="btn-link-cte" style="display:none;" onclick="renomearMotoristaAtivo()"><i class="fa-solid fa-pen"></i> Renomear</button>
+            <button type="button" id="btnToggleViagemConcluida" class="btn-link-cte" style="display:none;" onclick="toggleViagemConcluidaAtiva()"></button>
         </div>
         <select id="ordenacaoSelect" class="filter-select">
             <option value="data_desc">Data (mais recente primeiro)</option>
@@ -782,24 +786,70 @@
         renderizarTudo();
     };
 
+    // Uma "viagem" é o conjunto de documentos do motorista que caem na mesma
+    // pasta de data (dataViagem, ou a própria data quando não há dataViagem).
+    // Só conta como concluída se TODOS os documentos dela estiverem marcados —
+    // assim um documento novo adicionado depois reabre a viagem sozinho.
+    function documentosDaViagemAtiva() {
+        return canhotosGlobais.filter(c =>
+            (c.motorista || '__sem_motorista__') === motoristaAtivo &&
+            (c.dataViagem || c.data || '__sem_data__') === dataAtiva
+        );
+    }
+
+    function viagemEstaConcluida(docs) {
+        return docs.length > 0 && docs.every(c => c.viagemConcluida === true);
+    }
+
     function atualizarBreadcrumb() {
         const nomeExibicao = motoristaAtivo === '__sem_motorista__' ? 'Sem motorista definido' : motoristaAtivo;
         const backLabel = document.getElementById('breadcrumbBackLabel');
         const heading = document.getElementById('pastaMotoristaNome');
         const ord = document.getElementById('ordenacaoSelect');
         const btnRenomear = document.getElementById('btnRenomearMotorista');
+        const btnViagem = document.getElementById('btnToggleViagemConcluida');
         if (dataAtiva) {
             backLabel.innerText = nomeExibicao;
             heading.innerText = dataAtiva === '__sem_data__' ? 'Sem data definida' : formatarData(dataAtiva);
             ord.style.display = '';
             btnRenomear.style.display = 'none';
+
+            const concluida = viagemEstaConcluida(documentosDaViagemAtiva());
+            btnViagem.style.display = isMaster() ? 'flex' : 'none';
+            btnViagem.className = 'btn-link-cte' + (concluida ? ' desvincular' : '');
+            btnViagem.innerHTML = concluida
+                ? '<i class="fa-solid fa-rotate-left"></i> Reabrir viagem'
+                : '<i class="fa-solid fa-flag-checkered"></i> Marcar viagem concluída';
         } else {
             backLabel.innerText = 'Motoristas';
             heading.innerText = nomeExibicao;
             ord.style.display = 'none';
             btnRenomear.style.display = (isMaster() && motoristaAtivo !== '__sem_motorista__') ? 'flex' : 'none';
+            btnViagem.style.display = 'none';
         }
     }
+
+    window.toggleViagemConcluidaAtiva = async () => {
+        if (!isMaster() || !dataAtiva) return;
+        const docs = documentosDaViagemAtiva();
+        if (docs.length === 0) return;
+        const novoValor = !viagemEstaConcluida(docs);
+
+        showLoading(novoValor ? 'Marcando viagem como concluída...' : 'Reabrindo viagem...');
+        try {
+            for (const c of docs) {
+                await updateDoc(doc(db, "documentos", c.id), { viagemConcluida: novoValor, atualizadoEm: new Date().toISOString() });
+            }
+            atualizarBreadcrumb();
+            renderizarTudo();
+            showToast(novoValor ? 'Viagem marcada como concluída!' : 'Viagem reaberta.', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao atualizar a viagem: ' + e.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    };
 
     window.abrirPastaMotorista = (nome) => {
         motoristaAtivo = nome;
@@ -840,6 +890,14 @@
         return temPendente
             ? '<i class="fa-solid fa-clock folder-status-dot pendente" title="Tem canhoto pendente"></i>'
             : '<i class="fa-solid fa-circle-check folder-status-dot ok" title="Nenhum canhoto pendente"></i>';
+    }
+
+    // Canto oposto: a viagem inteira está concluída (bandeira verde) ou ainda
+    // em andamento (caminhão dourado)?
+    function indicadorViagemHtml(concluida) {
+        return concluida
+            ? '<i class="fa-solid fa-flag-checkered folder-viagem-dot ok" title="Viagem concluída"></i>'
+            : '<i class="fa-solid fa-truck folder-viagem-dot pendente" title="Viagem ainda não concluída"></i>';
     }
 
     function renderizarPastas() {
@@ -899,6 +957,16 @@
             if (c.status === 'pendente') temPendente[chave] = true;
         });
 
+        // Conclusão da viagem é avaliada sobre TODOS os documentos dela (sem os
+        // filtros de busca/status), igual ao botão de marcar — senão um filtro
+        // ativo poderia esconder um documento ainda não concluído.
+        const porViagem = {};
+        canhotosGlobais.forEach(c => {
+            if ((c.motorista || '__sem_motorista__') !== motoristaAtivo) return;
+            const chave = c.dataViagem || c.data || '__sem_data__';
+            (porViagem[chave] = porViagem[chave] || []).push(c);
+        });
+
         const datas = Object.keys(contagem).sort((a, b) => {
             if (a === '__sem_data__') return 1;
             if (b === '__sem_data__') return -1;
@@ -916,6 +984,7 @@
             const qtd = contagem[data];
             return `
                 <div class="folder-card" onclick="abrirPastaDataPorIndice(${idx})">
+                    ${indicadorViagemHtml(viagemEstaConcluida(porViagem[data] || []))}
                     ${indicadorPendenciaHtml(temPendente[data])}
                     <i class="fa-solid fa-calendar-days"></i>
                     <div>
