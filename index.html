@@ -405,7 +405,10 @@
 
     <div id="pastaBreadcrumb" class="toolbar" style="display:none;">
         <a href="#" onclick="voltarUmNivel(); return false;" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> <span id="breadcrumbBackLabel">Motoristas</span></a>
-        <h3 id="pastaMotoristaNome" style="margin:0; flex-grow:1; font-family:'Orbitron',sans-serif; font-size:1rem;"></h3>
+        <div style="display:flex; align-items:center; gap:10px; flex-grow:1;">
+            <h3 id="pastaMotoristaNome" style="margin:0; font-family:'Orbitron',sans-serif; font-size:1rem;"></h3>
+            <button type="button" id="btnRenomearMotorista" class="btn-link-cte" style="display:none;" onclick="renomearMotoristaAtivo()"><i class="fa-solid fa-pen"></i> Renomear</button>
+        </div>
         <select id="ordenacaoSelect" class="filter-select">
             <option value="data_desc">Data (mais recente primeiro)</option>
             <option value="data_asc">Data (mais antiga primeiro)</option>
@@ -784,14 +787,17 @@
         const backLabel = document.getElementById('breadcrumbBackLabel');
         const heading = document.getElementById('pastaMotoristaNome');
         const ord = document.getElementById('ordenacaoSelect');
+        const btnRenomear = document.getElementById('btnRenomearMotorista');
         if (dataAtiva) {
             backLabel.innerText = nomeExibicao;
             heading.innerText = dataAtiva === '__sem_data__' ? 'Sem data definida' : formatarData(dataAtiva);
             ord.style.display = '';
+            btnRenomear.style.display = 'none';
         } else {
             backLabel.innerText = 'Motoristas';
             heading.innerText = nomeExibicao;
             ord.style.display = 'none';
+            btnRenomear.style.display = (isMaster() && motoristaAtivo !== '__sem_motorista__') ? 'flex' : 'none';
         }
     }
 
@@ -1454,6 +1460,42 @@
         } catch (e) {
             console.error(e);
             showToast('Erro ao excluir: ' + e.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    };
+
+    window.renomearMotoristaAtivo = async () => {
+        if (!isMaster()) return;
+        if (!motoristaAtivo || motoristaAtivo === '__sem_motorista__') return;
+        const nomeAtual = motoristaAtivo;
+        const novoNome = prompt('Novo nome para o motorista:', nomeAtual);
+        if (novoNome === null) return;
+        const nomeLimpo = novoNome.trim();
+        if (!nomeLimpo) return showToast('O nome não pode ficar vazio.', 'error');
+        if (nomeLimpo === nomeAtual) return;
+
+        const afetados = canhotosGlobais.filter(c => (c.motorista || '__sem_motorista__') === nomeAtual);
+        if (afetados.length === 0) return;
+
+        const confirmado = await showConfirm(
+            `Renomear "${nomeAtual}" para "${nomeLimpo}"? Isso vai atualizar ${afetados.length} documento${afetados.length === 1 ? '' : 's'}.`,
+            { confirmText: 'Renomear' }
+        );
+        if (!confirmado) return;
+
+        showLoading('Renomeando motorista...');
+        try {
+            for (const c of afetados) {
+                await updateDoc(doc(db, "documentos", c.id), { motorista: nomeLimpo, atualizadoEm: new Date().toISOString() });
+            }
+            motoristaAtivo = nomeLimpo;
+            atualizarBreadcrumb();
+            renderizarTudo();
+            showToast('Motorista renomeado!', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao renomear: ' + e.message, 'error');
         } finally {
             hideLoading();
         }
