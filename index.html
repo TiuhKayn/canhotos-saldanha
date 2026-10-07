@@ -480,6 +480,11 @@
         </div>
     </div>
 
+    <div class="form-group">
+        <label>Viagem iniciada em <span style="font-weight:400; color:var(--text-muted);">— preencha só se for continuação de uma entrega de outra data</span></label>
+        <input type="date" id="campoDataViagem">
+    </div>
+
     <div class="form-row">
         <div class="form-group">
             <label>Motorista</label>
@@ -881,7 +886,9 @@
         const contagem = {};
         const temPendente = {};
         filtrados.forEach(c => {
-            const chave = c.data || '__sem_data__';
+            // Uma entrega que continua em outra data (dataViagem preenchida)
+            // entra na pasta da data de início da viagem, não na sua própria.
+            const chave = c.dataViagem || c.data || '__sem_data__';
             contagem[chave] = (contagem[chave] || 0) + 1;
             if (c.status === 'pendente') temPendente[chave] = true;
         });
@@ -1119,7 +1126,7 @@
         if (motoristaAtivo) {
             filtrados = filtrados.filter(c => (c.motorista || '__sem_motorista__') === motoristaAtivo);
             if (dataAtiva) {
-                filtrados = filtrados.filter(c => (c.data || '__sem_data__') === dataAtiva);
+                filtrados = filtrados.filter(c => (c.dataViagem || c.data || '__sem_data__') === dataAtiva);
             }
             const ord = document.getElementById('ordenacaoSelect').value;
             filtrados.sort((a, b) => {
@@ -1210,6 +1217,7 @@
         document.getElementById('campoTipo').value = 'canhoto';
         document.getElementById('campoCliente').value = '';
         document.getElementById('campoData').value = new Date().toISOString().split('T')[0];
+        document.getElementById('campoDataViagem').value = '';
         document.getElementById('campoMotorista').value = '';
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
@@ -1261,6 +1269,7 @@
         const tipoInfo = TIPOS_DOCUMENTO[tipo] || TIPO_DESCONHECIDO;
         const cliente = document.getElementById('campoCliente').value.trim();
         const data = document.getElementById('campoData').value;
+        const dataViagem = document.getElementById('campoDataViagem').value;
         const motorista = document.getElementById('campoMotorista').value.trim();
         const referencia = document.getElementById('campoReferencia').value.trim();
         const observacao = document.getElementById('campoObservacao').value.trim();
@@ -1284,6 +1293,7 @@
                 tipo,
                 clienteFinal: tipoInfo.temCliente ? cliente : '',
                 data,
+                dataViagem: dataViagem || null,
                 motorista,
                 referencia,
                 observacao,
@@ -1355,6 +1365,7 @@
         document.getElementById('detailFields').innerHTML = `
             <div class="detail-field"><div class="label">Tipo</div><div class="value">${tipoInfo.label}</div></div>
             <div class="detail-field"><div class="label">Data</div><div class="value">${c.data ? formatarData(c.data) : '-'}</div></div>
+            ${c.dataViagem && c.dataViagem !== c.data ? `<div class="detail-field"><div class="label">Viagem iniciada em</div><div class="value">${formatarData(c.dataViagem)}</div></div>` : ''}
             ${tipoInfo.temCliente ? `<div class="detail-field"><div class="label">Cliente</div><div class="value">${escapeHtml(c.clienteFinal || '-')}</div></div>` : ''}
             ${c.motorista ? `<div class="detail-field"><div class="label">Motorista</div><div class="value">${escapeHtml(c.motorista)}</div></div>` : ''}
             <div class="detail-field"><div class="label">Referência</div><div class="value">${escapeHtml(c.referencia || '-')}</div></div>
@@ -1421,6 +1432,7 @@
         document.getElementById('campoTipo').value = c.tipo || 'outro';
         document.getElementById('campoCliente').value = c.clienteFinal || '';
         document.getElementById('campoData').value = c.data || '';
+        document.getElementById('campoDataViagem').value = c.dataViagem || '';
         document.getElementById('campoMotorista').value = c.motorista || '';
         document.getElementById('campoReferencia').value = c.referencia || '';
         document.getElementById('campoObservacao').value = c.observacao || '';
