@@ -1268,6 +1268,11 @@
         const [y, m, d] = iso.split('-');
         return `${d}/${m}/${y}`;
     }
+    // "Hoje" no fuso local. toISOString() é UTC e, em Manaus (UTC-4), vira o dia seguinte depois das 20h.
+    function hojeLocal() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.innerText = str;
@@ -1291,8 +1296,8 @@
         document.getElementById('formModalTitle').innerText = 'Novo Documento';
         document.getElementById('campoTipo').value = 'canhoto';
         document.getElementById('campoCliente').value = '';
-        document.getElementById('campoData').value = new Date().toISOString().split('T')[0];
-        document.getElementById('campoDataViagem').value = new Date().toISOString().split('T')[0];
+        document.getElementById('campoData').value = hojeLocal();
+        document.getElementById('campoDataViagem').value = hojeLocal();
         document.getElementById('campoMotorista').value = '';
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
