@@ -478,13 +478,13 @@
             <input type="text" id="campoCliente" placeholder="Nome do cliente (deixe em branco se não souber)">
         </div>
         <div class="form-group">
-            <label>Data — opcional</label>
+            <label>Data</label>
             <input type="date" id="campoData">
         </div>
     </div>
 
     <div class="form-group">
-        <label>Viagem iniciada em <span style="font-weight:400; color:var(--text-muted);">— preencha só se for continuação de uma entrega de outra data</span></label>
+        <label>Viagem iniciada em</label>
         <input type="date" id="campoDataViagem">
     </div>
 
@@ -1223,7 +1223,7 @@
         document.getElementById('campoTipo').value = 'canhoto';
         document.getElementById('campoCliente').value = '';
         document.getElementById('campoData').value = new Date().toISOString().split('T')[0];
-        document.getElementById('campoDataViagem').value = '';
+        document.getElementById('campoDataViagem').value = new Date().toISOString().split('T')[0];
         document.getElementById('campoMotorista').value = '';
         document.getElementById('campoReferencia').value = '';
         document.getElementById('campoObservacao').value = '';
@@ -1438,7 +1438,7 @@
         document.getElementById('campoTipo').value = c.tipo || 'outro';
         document.getElementById('campoCliente').value = c.clienteFinal || '';
         document.getElementById('campoData').value = c.data || '';
-        document.getElementById('campoDataViagem').value = c.dataViagem || '';
+        document.getElementById('campoDataViagem').value = c.dataViagem || c.data || '';
         document.getElementById('campoMotorista').value = c.motorista || '';
         document.getElementById('campoReferencia').value = c.referencia || '';
         document.getElementById('campoObservacao').value = c.observacao || '';
